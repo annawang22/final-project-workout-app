@@ -1,31 +1,84 @@
 import "react-native-gesture-handler";
 
 import { NavigationContainer } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useEffect } from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import HomeScreen from "./screens/HomeScreen";
-import GoalsScreen from "./screens/GoalsScreen";
-import ProfileScreen from "./screens/ProfileScreen";
-import { getUser } from "./utils/storage";
+import { navigationRef } from "./navigation/navigationRef";
+import MainTabNavigator from "./navigation/MainTabNavigator";
+import type { RootStackParamList } from "./navigation/types";
+import LoginScreen from "./screens/LoginScreen";
+import SignupScreen from "./screens/SignupScreen";
+import { getUser, isLoggedIn } from "./utils/storage";
 
-const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+type AuthTarget = keyof RootStackParamList;
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<AuthTarget | null>(null);
+
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
       const user = await getUser();
-      console.log("[storage] getUser on launch:", user);
+      const loggedIn = await isLoggedIn();
+      if (cancelled) {
+        return;
+      }
+      if (user == null) {
+        setInitialRoute("Signup");
+      } else if (loggedIn) {
+        setInitialRoute("Main");
+      } else {
+        setInitialRoute("Login");
+      }
+      setReady(true);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  if (!ready || initialRoute == null) {
+    return (
+      <SafeAreaProvider>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
-    <NavigationContainer>
-      <Tab.Navigator screenOptions={{ headerTitleAlign: "center" }}>
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Goals" component={GoalsScreen} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{ headerBackTitle: "Back" }}
+        >
+          <Stack.Screen
+            name="Signup"
+            component={SignupScreen}
+            options={{ title: "Sign up" }}
+          />
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ title: "Log in" }}
+          />
+          <Stack.Screen
+            name="Main"
+            component={MainTabNavigator}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

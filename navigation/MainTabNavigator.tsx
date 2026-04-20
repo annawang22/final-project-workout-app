@@ -1,0 +1,17 @@
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+
+import GoalsScreen from "../screens/GoalsScreen";
+import HomeScreen from "../screens/HomeScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+
+const Tab = createBottomTabNavigator();
+
+export default function MainTabNavigator() {
+  return (
+    <Tab.Navigator screenOptions={{ headerTitleAlign: "center" }}>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Goals" component={GoalsScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}

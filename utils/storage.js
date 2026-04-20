@@ -66,7 +66,7 @@ export async function isLoggedIn() {
 
 export async function logout() {
   try {
-    await AsyncStorage.removeItem(KEYS.IS_LOGGED_IN);
+    await setLoggedIn(false);
   } catch (e) {
     console.error("logout", e);
   }
