@@ -10,7 +10,11 @@ export default function MainTabNavigator() {
   return (
     <Tab.Navigator screenOptions={{ headerTitleAlign: "center" }}>
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Goals" component={GoalsScreen} />
+      <Tab.Screen
+        name="Goals"
+        component={GoalsScreen}
+        options={{ title: "My Goals" }}
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

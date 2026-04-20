@@ -16,7 +16,149 @@ const KEYS = {
   ACCOUNTS: "accounts",
   USER: "user",
   IS_LOGGED_IN: "isLoggedIn",
+  GOALS: "goals",
 };
+
+/**
+ * @param {unknown} g
+ * @returns {{ id: string, text: string, exercises: unknown[], isActiveOnHome: boolean } | null}
+ */
+function normalizeGoalObject(g) {
+  if (!g || typeof g !== "object" || Array.isArray(g)) {
+    return null;
+  }
+  const o = /** @type {{ id?: unknown; text?: unknown; exercises?: unknown; isActiveOnHome?: unknown }} */ (g);
+  const id = o.id != null ? String(o.id).trim() : "";
+  if (!id) {
+    return null;
+  }
+  return {
+    id,
+    text: o.text != null ? String(o.text) : "",
+    exercises: Array.isArray(o.exercises) ? o.exercises : [],
+    isActiveOnHome: Boolean(o.isActiveOnHome),
+  };
+}
+
+function createGoalId() {
+  return `goal_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/**
+ * @returns {Promise<{ id: string, text: string, exercises: unknown[], isActiveOnHome: boolean }[]>}
+ */
+async function readGoalsFromStorage() {
+  const raw = await AsyncStorage.getItem(KEYS.GOALS);
+  if (raw == null || raw === "") {
+    return [];
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    console.error("readGoalsFromStorage JSON.parse", e);
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed.map(normalizeGoalObject).filter(Boolean);
+}
+
+/**
+ * @param {{ id: string, text: string, exercises: unknown[]; isActiveOnHome: boolean }[]} goals
+ */
+async function writeGoalsToStorage(goals) {
+  await AsyncStorage.setItem(KEYS.GOALS, JSON.stringify(goals));
+}
+
+/**
+ * @returns {Promise<{ id: string, text: string, exercises: unknown[], isActiveOnHome: boolean }[]>}
+ */
+export async function getGoals() {
+  try {
+    return await readGoalsFromStorage();
+  } catch (e) {
+    console.error("getGoals", e);
+    return [];
+  }
+}
+
+/**
+ * @param {string} text
+ * @returns {Promise<{ id: string, text: string, exercises: unknown[], isActiveOnHome: boolean } | null>}
+ */
+export async function addGoal(text) {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  try {
+    const goals = await readGoalsFromStorage();
+    const next = {
+      id: createGoalId(),
+      text: trimmed,
+      exercises: [],
+      isActiveOnHome: false,
+    };
+    goals.push(next);
+    await writeGoalsToStorage(goals);
+    return next;
+  } catch (e) {
+    console.error("addGoal", e);
+    return null;
+  }
+}
+
+/**
+ * @param {string} id
+ * @param {string} text
+ * @returns {Promise<boolean>}
+ */
+export async function updateGoalText(id, text) {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return false;
+  }
+  try {
+    const goals = await readGoalsFromStorage();
+    const idx = goals.findIndex((g) => g.id === id);
+    if (idx < 0) {
+      return false;
+    }
+    const prev = goals[idx];
+    goals[idx] = {
+      id: prev.id,
+      text: trimmed,
+      exercises: prev.exercises,
+      isActiveOnHome: prev.isActiveOnHome,
+    };
+    await writeGoalsToStorage(goals);
+    return true;
+  } catch (e) {
+    console.error("updateGoalText", e);
+    return false;
+  }
+}
+
+/**
+ * @param {string} id
+ * @returns {Promise<boolean>}
+ */
+export async function deleteGoal(id) {
+  try {
+    const goals = await readGoalsFromStorage();
+    const next = goals.filter((g) => g.id !== id);
+    if (next.length === goals.length) {
+      return false;
+    }
+    await writeGoalsToStorage(next);
+    return true;
+  } catch (e) {
+    console.error("deleteGoal", e);
+    return false;
+  }
+}
 
 /** Serialize all reads/writes of the accounts list (merge + persist in order). */
 let usersStorageChain = Promise.resolve();
