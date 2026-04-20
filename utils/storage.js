@@ -78,16 +78,71 @@ function normalizeGoalObject(g) {
   if (!id) {
     return null;
   }
+  const exArr = Array.isArray(o.exercises) ? o.exercises : [];
   return {
     id,
     text: o.text != null ? String(o.text) : "",
-    exercises: Array.isArray(o.exercises) ? o.exercises : [],
+    exercises: exArr
+      .map((ex) => normalizeExerciseInGoal(ex))
+      .filter(Boolean),
     isActiveOnHome: Boolean(o.isActiveOnHome),
   };
 }
 
 function createGoalId() {
   return `goal_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function createExerciseId() {
+  return `ex_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/**
+ * @param {unknown} v
+ * @returns {number | null}
+ */
+function coerceOptionalNumber(v) {
+  if (v === null || v === undefined) {
+    return null;
+  }
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return v;
+  }
+  const s = String(v).trim();
+  if (s === "") {
+    return null;
+  }
+  const n = Number(s.replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * @param {unknown} ex
+ * @returns {{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null, repeat: null } | null}
+ */
+function normalizeExerciseInGoal(ex) {
+  if (!ex || typeof ex !== "object" || Array.isArray(ex)) {
+    return null;
+  }
+  const o = /** @type {{ id?: unknown; name?: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown; repeat?: unknown }} */ (ex);
+  const id = o.id != null ? String(o.id).trim() : "";
+  if (!id) {
+    return null;
+  }
+  const name = o.name != null ? String(o.name).trim() : "";
+  if (!name) {
+    return null;
+  }
+  const dur = o.duration != null ? String(o.duration).trim() : "";
+  return {
+    id,
+    name,
+    sets: coerceOptionalNumber(o.sets),
+    reps: coerceOptionalNumber(o.reps),
+    weight: coerceOptionalNumber(o.weight),
+    duration: dur === "" ? null : dur,
+    repeat: o.repeat == null ? null : o.repeat,
+  };
 }
 
 /**
@@ -230,6 +285,201 @@ export async function deleteGoal(id) {
     return true;
   } catch (e) {
     console.error("deleteGoal", e);
+    return false;
+  }
+}
+
+/**
+ * @param {string} goalId
+ * @returns {Promise<object | null>}
+ */
+export async function getGoalById(goalId) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return null;
+    }
+    const goals = await readGoalsFromStorage();
+    return goals.find((g) => g.id === goalId) ?? null;
+  } catch (e) {
+    console.error("getGoalById", e);
+    return null;
+  }
+}
+
+/**
+ * @param {string} goalId
+ * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} fields
+ * @returns {Promise<object | null>}
+ */
+export async function addExerciseToGoal(goalId, fields) {
+  const name = String(fields.name ?? "").trim();
+  if (name.length === 0) {
+    return null;
+  }
+  try {
+    if ((await getActiveUser()) == null) {
+      return null;
+    }
+    const goals = await readGoalsFromStorage();
+    const gIdx = goals.findIndex((g) => g.id === goalId);
+    if (gIdx < 0) {
+      return null;
+    }
+    const prev = goals[gIdx];
+    const ex = {
+      id: createExerciseId(),
+      name,
+      sets: coerceOptionalNumber(fields.sets),
+      reps: coerceOptionalNumber(fields.reps),
+      weight: coerceOptionalNumber(fields.weight),
+      duration:
+        fields.duration != null && String(fields.duration).trim() !== ""
+          ? String(fields.duration).trim()
+          : null,
+      repeat: null,
+    };
+    const prevEx = Array.isArray(prev.exercises) ? prev.exercises : [];
+    const nextEx = [...prevEx, ex];
+    goals[gIdx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: nextEx,
+      isActiveOnHome: prev.isActiveOnHome,
+    };
+    await writeGoalsToStorage(goals);
+    return ex;
+  } catch (e) {
+    console.error("addExerciseToGoal", e);
+    return null;
+  }
+}
+
+/**
+ * @param {string} goalId
+ * @param {string} exerciseId
+ * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} fields
+ * @returns {Promise<boolean>}
+ */
+export async function updateExerciseInGoal(goalId, exerciseId, fields) {
+  const name = String(fields.name ?? "").trim();
+  if (name.length === 0) {
+    return false;
+  }
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const goals = await readGoalsFromStorage();
+    const gIdx = goals.findIndex((g) => g.id === goalId);
+    if (gIdx < 0) {
+      return false;
+    }
+    const prev = goals[gIdx];
+    const list = Array.isArray(prev.exercises) ? [...prev.exercises] : [];
+    const eIdx = list.findIndex(
+      (e) => e && typeof e === "object" && "id" in e && e.id === exerciseId,
+    );
+    if (eIdx < 0) {
+      return false;
+    }
+    const old = list[eIdx];
+    const oldRep =
+      old && typeof old === "object" && "repeat" in old ? old.repeat : null;
+    list[eIdx] = {
+      id: exerciseId,
+      name,
+      sets: coerceOptionalNumber(fields.sets),
+      reps: coerceOptionalNumber(fields.reps),
+      weight: coerceOptionalNumber(fields.weight),
+      duration:
+        fields.duration != null && String(fields.duration).trim() !== ""
+          ? String(fields.duration).trim()
+          : null,
+      repeat: oldRep,
+    };
+    goals[gIdx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: list,
+      isActiveOnHome: prev.isActiveOnHome,
+    };
+    await writeGoalsToStorage(goals);
+    return true;
+  } catch (e) {
+    console.error("updateExerciseInGoal", e);
+    return false;
+  }
+}
+
+/**
+ * @param {string} goalId
+ * @param {string} exerciseId
+ * @returns {Promise<boolean>}
+ */
+export async function deleteExerciseFromGoal(goalId, exerciseId) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const goals = await readGoalsFromStorage();
+    const gIdx = goals.findIndex((g) => g.id === goalId);
+    if (gIdx < 0) {
+      return false;
+    }
+    const prev = goals[gIdx];
+    const before = Array.isArray(prev.exercises) ? prev.exercises : [];
+    const list = before.filter((e) => {
+      if (!e || typeof e !== "object" || !("id" in e)) {
+        return true;
+      }
+      return e.id !== exerciseId;
+    });
+    if (list.length === before.length) {
+      return false;
+    }
+    goals[gIdx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: list,
+      isActiveOnHome: prev.isActiveOnHome,
+    };
+    await writeGoalsToStorage(goals);
+    return true;
+  } catch (e) {
+    console.error("deleteExerciseFromGoal", e);
+    return false;
+  }
+}
+
+/**
+ * @param {string} goalId
+ * @param {unknown[]} exercisesOrdered
+ * @returns {Promise<boolean>}
+ */
+export async function reorderExercisesInGoal(goalId, exercisesOrdered) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const goals = await readGoalsFromStorage();
+    const gIdx = goals.findIndex((g) => g.id === goalId);
+    if (gIdx < 0) {
+      return false;
+    }
+    const prev = goals[gIdx];
+    const normalized = exercisesOrdered
+      .map((ex) => normalizeExerciseInGoal(ex))
+      .filter(Boolean);
+    goals[gIdx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: normalized,
+      isActiveOnHome: prev.isActiveOnHome,
+    };
+    await writeGoalsToStorage(goals);
+    return true;
+  } catch (e) {
+    console.error("reorderExercisesInGoal", e);
     return false;
   }
 }

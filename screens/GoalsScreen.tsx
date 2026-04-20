@@ -1,13 +1,21 @@
 /**
- * Goals screen — planned gesture model (Goals list rows, Phase 5+):
+ * Goals list gestures (Phase 3–5):
  *
- * - Single tap → expand/collapse exercise dropdown
- * - Double tap → navigate to Goal Detail screen
+ * Conflict prevention — single tap vs double tap:
+ * - First tap starts a short timer (~280ms). If a second tap arrives before the timer
+ *   fires, we treat it as a double tap: cancel the timer and navigate to Goal Detail.
+ * - If the timer fires with no second tap, we treat it as a single tap: toggle the
+ *   inline exercise preview (expand/collapse).
+ * - Long press is handled separately and clears any pending single-tap timer so we
+ *   don’t expand/collapse or navigate after the user intended to open the goal edit modal.
+ *
+ * Phase 5 (not implemented yet):
  * - Swipe right → toggle isActiveOnHome
  */
 
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +30,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import {
   addGoal,
   deleteGoal,
@@ -36,12 +45,19 @@ type Goal = {
   isActiveOnHome: boolean;
 };
 
+type ExercisePreview = { id: string; name: string };
+
+type GoalsNav = NativeStackNavigationProp<GoalsStackParamList, "GoalsList">;
+
 const EMPTY_STATE =
   "No goals yet. Create your first workout goal to get started.";
 
 export default function GoalsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<GoalsNav>();
   const insets = useSafeAreaInsets();
+
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [ready, setReady] = useState(false);
@@ -64,6 +80,30 @@ export default function GoalsScreen() {
     }, [loadGoals]),
   );
 
+  useEffect(() => {
+    return () => {
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRowPress = useCallback(
+    (goal: Goal) => {
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = null;
+        navigation.navigate("GoalDetail", { goalId: goal.id });
+        return;
+      }
+      tapTimerRef.current = setTimeout(() => {
+        tapTimerRef.current = null;
+        setExpandedGoalId((cur) => (cur === goal.id ? null : goal.id));
+      }, 280);
+    },
+    [navigation],
+  );
+
   const openAdd = useCallback(() => {
     setEditingGoalId(null);
     setInputValue("");
@@ -72,6 +112,10 @@ export default function GoalsScreen() {
   }, []);
 
   const openEdit = useCallback((goal: Goal) => {
+    if (tapTimerRef.current) {
+      clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = null;
+    }
     setEditingGoalId(goal.id);
     setInputValue(goal.text);
     setSaveError(null);
@@ -156,17 +200,36 @@ export default function GoalsScreen() {
           data={goals}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <Pressable
-              onLongPress={() => openEdit(item)}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <Text style={styles.rowText}>{item.text}</Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const ex = (Array.isArray(item.exercises)
+              ? item.exercises
+              : []) as ExercisePreview[];
+            return (
+              <Pressable
+                onPress={() => handleRowPress(item)}
+                onLongPress={() => openEdit(item)}
+                style={({ pressed }) => [
+                  styles.row,
+                  pressed && styles.rowPressed,
+                ]}
+              >
+                <Text style={styles.rowText}>{item.text}</Text>
+                {expandedGoalId === item.id ? (
+                  <View style={styles.previewBox}>
+                    {ex.length === 0 ? (
+                      <Text style={styles.previewHint}>No exercises yet</Text>
+                    ) : (
+                      ex.map((e) => (
+                        <Text key={e.id} style={styles.previewLine}>
+                          • {e.name}
+                        </Text>
+                      ))
+                    )}
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          }}
         />
       )}
 
@@ -277,6 +340,19 @@ const styles = StyleSheet.create({
   },
   rowText: {
     fontSize: 16,
+  },
+  previewBox: {
+    marginTop: 10,
+    paddingLeft: 4,
+  },
+  previewHint: {
+    fontSize: 14,
+    color: "#666",
+  },
+  previewLine: {
+    fontSize: 14,
+    color: "#333",
+    marginTop: 4,
   },
   headerBtn: {
     marginRight: 8,
