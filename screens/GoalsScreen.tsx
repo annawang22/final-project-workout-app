@@ -4,8 +4,9 @@
  * Conflict prevention — single tap vs double tap:
  * - First tap starts a short timer (~280ms). If a second tap arrives before the timer
  *   fires, we treat it as a double tap: cancel the timer and navigate to Goal Detail.
- * - If the timer fires with no second tap, we treat it as a single tap: toggle the
- *   inline exercise preview (expand/collapse).
+ * - If the timer fires with no second tap, we treat it as a single tap: toggle only
+ *   that goal’s inline exercise preview. Multiple goals may stay expanded; another
+ *   row’s tap does not collapse others—only tapping the same goal again collapses it.
  * - Long press is handled separately and clears any pending single-tap timer so we
  *   don’t expand/collapse or navigate after the user intended to open the goal edit modal.
  *
@@ -45,19 +46,70 @@ type Goal = {
   isActiveOnHome: boolean;
 };
 
-type ExercisePreview = { id: string; name: string };
-
 type GoalsNav = NativeStackNavigationProp<GoalsStackParamList, "GoalsList">;
 
 const EMPTY_STATE =
   "No goals yet. Create your first workout goal to get started.";
+
+function coerceNumber(v: unknown): number | null {
+  if (v === null || v === undefined) {
+    return null;
+  }
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return v;
+  }
+  const n = Number(String(v).trim().replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Inline goal-row preview: e.g. `Sprints (8 reps × 30 secs)` */
+function formatExercisePreviewLine(raw: unknown): string {
+  if (!raw || typeof raw !== "object") {
+    return "";
+  }
+  const o = raw as Record<string, unknown>;
+  const name = String(o.name ?? "").trim() || "Exercise";
+  const parts: string[] = [];
+  const sets = coerceNumber(o.sets);
+  const reps = coerceNumber(o.reps);
+  const weight = coerceNumber(o.weight);
+  const duration =
+    o.duration != null && String(o.duration).trim() !== ""
+      ? String(o.duration).trim()
+      : null;
+  if (sets != null) {
+    parts.push(`${sets} set${sets === 1 ? "" : "s"}`);
+  }
+  if (reps != null) {
+    parts.push(`${reps} rep${reps === 1 ? "" : "s"}`);
+  }
+  if (weight != null) {
+    parts.push(String(weight));
+  }
+  if (duration) {
+    parts.push(duration);
+  }
+  if (parts.length === 0) {
+    return name;
+  }
+  return `${name} (${parts.join(" × ")})`;
+}
+
+function exercisePreviewKey(raw: unknown, index: number): string {
+  if (raw && typeof raw === "object" && "id" in raw && raw.id != null) {
+    return String(raw.id);
+  }
+  return `ex-preview-${index}`;
+}
 
 export default function GoalsScreen() {
   const navigation = useNavigation<GoalsNav>();
   const insets = useSafeAreaInsets();
 
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+  const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [ready, setReady] = useState(false);
@@ -98,7 +150,15 @@ export default function GoalsScreen() {
       }
       tapTimerRef.current = setTimeout(() => {
         tapTimerRef.current = null;
-        setExpandedGoalId((cur) => (cur === goal.id ? null : goal.id));
+        setExpandedGoalIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(goal.id)) {
+            next.delete(goal.id);
+          } else {
+            next.add(goal.id);
+          }
+          return next;
+        });
       }, 280);
     },
     [navigation],
@@ -201,9 +261,7 @@ export default function GoalsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const ex = (Array.isArray(item.exercises)
-              ? item.exercises
-              : []) as ExercisePreview[];
+            const exList = Array.isArray(item.exercises) ? item.exercises : [];
             return (
               <Pressable
                 onPress={() => handleRowPress(item)}
@@ -214,14 +272,17 @@ export default function GoalsScreen() {
                 ]}
               >
                 <Text style={styles.rowText}>{item.text}</Text>
-                {expandedGoalId === item.id ? (
+                {expandedGoalIds.has(item.id) ? (
                   <View style={styles.previewBox}>
-                    {ex.length === 0 ? (
+                    {exList.length === 0 ? (
                       <Text style={styles.previewHint}>No exercises yet</Text>
                     ) : (
-                      ex.map((e) => (
-                        <Text key={e.id} style={styles.previewLine}>
-                          • {e.name}
+                      exList.map((raw, idx) => (
+                        <Text
+                          key={exercisePreviewKey(raw, idx)}
+                          style={styles.previewLine}
+                        >
+                          • {formatExercisePreviewLine(raw)}
                         </Text>
                       ))
                     )}
