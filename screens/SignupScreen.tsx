@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import type { RootStackParamList } from "../navigation/types";
-import { getUsers, saveUser, setLoggedIn } from "../utils/storage";
+import { getUsers, saveUser, setActiveUser, setLoggedIn } from "../utils/storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Signup">;
 
@@ -40,6 +40,7 @@ export default function SignupScreen({ navigation }: Props) {
 
     await saveUser({ username: trimmedUsername, password });
     await setLoggedIn(true);
+    await setActiveUser(trimmedUsername);
     navigation.reset({
       index: 0,
       routes: [{ name: "Main" }],

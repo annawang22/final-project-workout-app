@@ -6,8 +6,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * - accounts        — JSON array: { username, password }[] (canonical store for all accounts)
  * - user (legacy)   — migrated into `accounts` on first read, then removed (was single object or array)
  * - isLoggedIn      — boolean auth state
- * - goals           — GoalObject[] (all goals + exercises)
- * - home_exercises  — ExerciseObject[] standalone Home exercises
+ * - activeUser      — string username for the current session (which account’s data to load)
+ * - goals__u__*      — per-user goal lists (use goalsKeyForUser; legacy "goals" is migrated on read)
+ * - home_exercises  — ExerciseObject[] (future: scope per user like goals)
  * - profile         — ProfileObject (name, username, image URI)
  * - logbook         — LogbookEntry[] completed exercise history
  */
@@ -16,8 +17,53 @@ const KEYS = {
   ACCOUNTS: "accounts",
   USER: "user",
   IS_LOGGED_IN: "isLoggedIn",
-  GOALS: "goals",
+  ACTIVE_USER: "activeUser",
+  /** @deprecated pre–per-user migration; unscoped list moved into the active user’s key */
+  GOALS_LEGACY: "goals",
 };
+
+/**
+ * @param {string} username
+ * @returns {string}
+ */
+function goalsKeyForUser(username) {
+  return `goals__u__${encodeURIComponent(String(username))}`;
+}
+
+/**
+ * @returns {Promise<string | null>} username of the account whose data is in use, or null
+ */
+export async function getActiveUser() {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.ACTIVE_USER);
+    if (raw == null || raw === "") {
+      return null;
+    }
+    return String(raw);
+  } catch (e) {
+    console.error("getActiveUser", e);
+    return null;
+  }
+}
+
+/**
+ * @param {string} username
+ */
+export async function setActiveUser(username) {
+  try {
+    await AsyncStorage.setItem(KEYS.ACTIVE_USER, String(username).trim());
+  } catch (e) {
+    console.error("setActiveUser", e);
+  }
+}
+
+export async function clearActiveUser() {
+  try {
+    await AsyncStorage.removeItem(KEYS.ACTIVE_USER);
+  } catch (e) {
+    console.error("clearActiveUser", e);
+  }
+}
 
 /**
  * @param {unknown} g
@@ -48,9 +94,21 @@ function createGoalId() {
  * @returns {Promise<{ id: string, text: string, exercises: unknown[], isActiveOnHome: boolean }[]>}
  */
 async function readGoalsFromStorage() {
-  const raw = await AsyncStorage.getItem(KEYS.GOALS);
-  if (raw == null || raw === "") {
+  const active = await getActiveUser();
+  if (active == null) {
     return [];
+  }
+  const scopedKey = goalsKeyForUser(active);
+  let raw = await AsyncStorage.getItem(scopedKey);
+  if (raw == null || raw === "") {
+    const legacy = await AsyncStorage.getItem(KEYS.GOALS_LEGACY);
+    if (legacy != null && legacy !== "") {
+      await AsyncStorage.setItem(scopedKey, legacy);
+      await AsyncStorage.removeItem(KEYS.GOALS_LEGACY);
+      raw = legacy;
+    } else {
+      return [];
+    }
   }
   let parsed;
   try {
@@ -69,7 +127,14 @@ async function readGoalsFromStorage() {
  * @param {{ id: string, text: string, exercises: unknown[]; isActiveOnHome: boolean }[]} goals
  */
 async function writeGoalsToStorage(goals) {
-  await AsyncStorage.setItem(KEYS.GOALS, JSON.stringify(goals));
+  const active = await getActiveUser();
+  if (active == null) {
+    return;
+  }
+  await AsyncStorage.setItem(
+    goalsKeyForUser(active),
+    JSON.stringify(goals),
+  );
 }
 
 /**
@@ -94,6 +159,9 @@ export async function addGoal(text) {
     return null;
   }
   try {
+    if ((await getActiveUser()) == null) {
+      return null;
+    }
     const goals = await readGoalsFromStorage();
     const next = {
       id: createGoalId(),
@@ -121,6 +189,9 @@ export async function updateGoalText(id, text) {
     return false;
   }
   try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
     const goals = await readGoalsFromStorage();
     const idx = goals.findIndex((g) => g.id === id);
     if (idx < 0) {
@@ -147,6 +218,9 @@ export async function updateGoalText(id, text) {
  */
 export async function deleteGoal(id) {
   try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
     const goals = await readGoalsFromStorage();
     const next = goals.filter((g) => g.id !== id);
     if (next.length === goals.length) {
@@ -417,7 +491,33 @@ export async function isLoggedIn() {
 export async function logout() {
   try {
     await setLoggedIn(false);
+    await clearActiveUser();
   } catch (e) {
     console.error("logout", e);
+  }
+}
+
+/**
+ * If a session is marked logged in but `activeUser` is missing (e.g. after app update),
+ * bind a single local account, or require sign-in again when several accounts exist.
+ */
+export async function recoverActiveUserIfNeeded() {
+  try {
+    const loggedIn = await isLoggedIn();
+    if (!loggedIn) {
+      return;
+    }
+    const active = await getActiveUser();
+    if (active != null) {
+      return;
+    }
+    const users = await getUsers();
+    if (users.length === 1) {
+      await setActiveUser(users[0].username);
+      return;
+    }
+    await setLoggedIn(false);
+  } catch (e) {
+    console.error("recoverActiveUserIfNeeded", e);
   }
 }
