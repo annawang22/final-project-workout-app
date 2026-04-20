@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import type { RootStackParamList } from "../navigation/types";
-import { saveUser, setLoggedIn } from "../utils/storage";
+import { getUsers, saveUser, setLoggedIn } from "../utils/storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Signup">;
 
@@ -29,6 +29,12 @@ export default function SignupScreen({ navigation }: Props) {
 
     if (fieldsEmpty) {
       setError("Please enter both username and password.");
+      return;
+    }
+
+    const existing = await getUsers();
+    if (existing.some((u) => u.username === trimmedUsername)) {
+      setError("That username is already taken.");
       return;
     }
 

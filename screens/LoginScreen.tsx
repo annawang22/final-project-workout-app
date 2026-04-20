@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import type { RootStackParamList } from "../navigation/types";
-import { getUser, setLoggedIn } from "../utils/storage";
+import { findUserByCredentials, setLoggedIn } from "../utils/storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
@@ -32,12 +32,8 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
 
-    const stored = await getUser();
-    if (
-      stored &&
-      stored.username === trimmedUsername &&
-      stored.password === password
-    ) {
+    const stored = await findUserByCredentials(trimmedUsername, password);
+    if (stored) {
       await setLoggedIn(true);
       navigation.reset({
         index: 0,

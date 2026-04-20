@@ -11,7 +11,7 @@ import MainTabNavigator from "./navigation/MainTabNavigator";
 import type { RootStackParamList } from "./navigation/types";
 import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
-import { getUser, isLoggedIn } from "./utils/storage";
+import { getUsers, isLoggedIn } from "./utils/storage";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -24,12 +24,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const user = await getUser();
+      const users = await getUsers();
       const loggedIn = await isLoggedIn();
       if (cancelled) {
         return;
       }
-      if (user == null) {
+      if (users.length === 0) {
         setInitialRoute("Signup");
       } else if (loggedIn) {
         setInitialRoute("Main");
