@@ -11,6 +11,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * - home_exercises  — ExerciseObject[] (future: scope per user like goals)
  * - profile         — ProfileObject (name, username, image URI)
  * - logbook         — LogbookEntry[] completed exercise history
+ *
+ * DEBUG ONLY (not user data):
+ * - debug_date_override__u__* — optional YYYY-MM-DD override for getEffectiveToday() per user
  */
 
 const KEYS = {
@@ -21,6 +24,111 @@ const KEYS = {
   /** @deprecated pre–per-user migration; unscoped list moved into the active user’s key */
   GOALS_LEGACY: "goals",
 };
+
+/**
+ * DEBUG ONLY — AsyncStorage key for fake “today” while testing repeat scheduling
+ * without changing the device clock. Scoped per username like goals.
+ * @param {string} username
+ */
+function debugDateOverrideKeyForUser(username) {
+  return `debug_date_override__u__${encodeURIComponent(String(username))}`;
+}
+
+/** @type {string | null} */
+let _cachedDebugDateOverrideYmd = null;
+
+/**
+ * Returns the calendar date the app should treat as “today” for repeat / scheduling tests.
+ * Uses DEBUG date override when set for the active user; otherwise the real system date.
+ * @returns {Date}
+ */
+export function getEffectiveToday() {
+  if (
+    _cachedDebugDateOverrideYmd &&
+    /^\d{4}-\d{2}-\d{2}$/.test(_cachedDebugDateOverrideYmd)
+  ) {
+    const [y, m, d] = _cachedDebugDateOverrideYmd.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (!Number.isNaN(dt.getTime())) {
+      dt.setHours(12, 0, 0, 0);
+      return dt;
+    }
+  }
+  const real = new Date();
+  real.setHours(12, 0, 0, 0);
+  return real;
+}
+
+/**
+ * @param {Date} d
+ * @returns {string}
+ */
+export function formatDateYMD(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${day}`;
+}
+
+/** @returns {string | null} */
+export function getDebugDateOverrideCached() {
+  return _cachedDebugDateOverrideYmd;
+}
+
+export async function refreshDebugDateOverrideCache() {
+  try {
+    const u = await getActiveUser();
+    if (u == null) {
+      _cachedDebugDateOverrideYmd = null;
+      return;
+    }
+    const raw = await AsyncStorage.getItem(debugDateOverrideKeyForUser(u));
+    if (raw != null && /^\d{4}-\d{2}-\d{2}$/.test(String(raw).trim())) {
+      _cachedDebugDateOverrideYmd = String(raw).trim();
+    } else {
+      _cachedDebugDateOverrideYmd = null;
+    }
+  } catch (e) {
+    console.error("refreshDebugDateOverrideCache", e);
+    _cachedDebugDateOverrideYmd = null;
+  }
+}
+
+/**
+ * DEBUG ONLY — persist override YYYY-MM-DD for the active user.
+ * @param {string} ymd
+ */
+export async function setDebugDateOverride(ymd) {
+  const u = await getActiveUser();
+  if (u == null) {
+    return;
+  }
+  const s = String(ymd).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return;
+  }
+  try {
+    await AsyncStorage.setItem(debugDateOverrideKeyForUser(u), s);
+    _cachedDebugDateOverrideYmd = s;
+  } catch (e) {
+    console.error("setDebugDateOverride", e);
+  }
+}
+
+/** DEBUG ONLY */
+export async function clearDebugDateOverride() {
+  try {
+    const u = await getActiveUser();
+    if (u == null) {
+      _cachedDebugDateOverrideYmd = null;
+      return;
+    }
+    await AsyncStorage.removeItem(debugDateOverrideKeyForUser(u));
+    _cachedDebugDateOverrideYmd = null;
+  } catch (e) {
+    console.error("clearDebugDateOverride", e);
+  }
+}
 
 /**
  * @param {string} username
@@ -52,6 +160,7 @@ export async function getActiveUser() {
 export async function setActiveUser(username) {
   try {
     await AsyncStorage.setItem(KEYS.ACTIVE_USER, String(username).trim());
+    await refreshDebugDateOverrideCache();
   } catch (e) {
     console.error("setActiveUser", e);
   }
@@ -59,6 +168,7 @@ export async function setActiveUser(username) {
 
 export async function clearActiveUser() {
   try {
+    _cachedDebugDateOverrideYmd = null;
     await AsyncStorage.removeItem(KEYS.ACTIVE_USER);
   } catch (e) {
     console.error("clearActiveUser", e);
@@ -116,6 +226,77 @@ function coerceOptionalNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+const VALID_REPEAT_FREQ = new Set(["day", "week", "month", "year"]);
+const VALID_DAY_NAMES = new Set([
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+]);
+
+/**
+ * Coerce stored repeat payload into a safe object or null. Never throws.
+ * @param {unknown} r
+ * @returns {object | null}
+ */
+export function sanitizeRepeatConfig(r) {
+  if (r == null) {
+    return null;
+  }
+  if (typeof r !== "object" || Array.isArray(r)) {
+    return null;
+  }
+  const o = /** @type {Record<string, unknown>} */ (r);
+  const rawFreq = String(o.frequency ?? "week").toLowerCase();
+  const frequency = VALID_REPEAT_FREQ.has(rawFreq) ? rawFreq : "week";
+  let interval = parseInt(String(o.interval ?? "1"), 10);
+  if (!Number.isFinite(interval) || interval < 1) {
+    interval = 1;
+  }
+  let daysOfWeek = [];
+  if (Array.isArray(o.daysOfWeek)) {
+    daysOfWeek = o.daysOfWeek
+      .map((d) => String(d))
+      .filter((d) => VALID_DAY_NAMES.has(d));
+  }
+  if (frequency !== "week") {
+    daysOfWeek = [];
+  }
+  let startDate = null;
+  const sd = o.startDate;
+  if (typeof sd === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sd.trim())) {
+    startDate = sd.trim();
+  }
+  if (!startDate) {
+    startDate = formatDateYMD(getEffectiveToday());
+  }
+  const endType = o.endType === "date" ? "date" : "never";
+  let endDate = null;
+  if (endType === "date") {
+    const ed = o.endDate;
+    if (typeof ed === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ed.trim())) {
+      endDate = ed.trim();
+    }
+    if (endDate && startDate && endDate < startDate) {
+      endDate = startDate;
+    }
+  }
+  if (frequency === "week" && daysOfWeek.length === 0) {
+    return null;
+  }
+  return {
+    frequency,
+    interval,
+    daysOfWeek,
+    startDate,
+    endType,
+    endDate,
+  };
+}
+
 /**
  * @param {unknown} ex
  * @returns {{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null, repeat: null } | null}
@@ -141,7 +322,7 @@ function normalizeExerciseInGoal(ex) {
     reps: coerceOptionalNumber(o.reps),
     weight: coerceOptionalNumber(o.weight),
     duration: dur === "" ? null : dur,
-    repeat: o.repeat == null ? null : o.repeat,
+    repeat: sanitizeRepeatConfig(o.repeat),
   };
 }
 
@@ -308,7 +489,7 @@ export async function getGoalById(goalId) {
 
 /**
  * @param {string} goalId
- * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} fields
+ * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown; repeat?: unknown }} fields
  * @returns {Promise<object | null>}
  */
 export async function addExerciseToGoal(goalId, fields) {
@@ -336,7 +517,10 @@ export async function addExerciseToGoal(goalId, fields) {
         fields.duration != null && String(fields.duration).trim() !== ""
           ? String(fields.duration).trim()
           : null,
-      repeat: null,
+      repeat:
+        fields.repeat !== undefined
+          ? sanitizeRepeatConfig(fields.repeat)
+          : null,
     };
     const prevEx = Array.isArray(prev.exercises) ? prev.exercises : [];
     const nextEx = [...prevEx, ex];
@@ -357,7 +541,7 @@ export async function addExerciseToGoal(goalId, fields) {
 /**
  * @param {string} goalId
  * @param {string} exerciseId
- * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} fields
+ * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown; repeat?: unknown }} fields
  * @returns {Promise<boolean>}
  */
 export async function updateExerciseInGoal(goalId, exerciseId, fields) {
@@ -385,6 +569,10 @@ export async function updateExerciseInGoal(goalId, exerciseId, fields) {
     const old = list[eIdx];
     const oldRep =
       old && typeof old === "object" && "repeat" in old ? old.repeat : null;
+    const nextRepeat =
+      fields.repeat !== undefined
+        ? sanitizeRepeatConfig(fields.repeat)
+        : sanitizeRepeatConfig(oldRep);
     list[eIdx] = {
       id: exerciseId,
       name,
@@ -395,7 +583,7 @@ export async function updateExerciseInGoal(goalId, exerciseId, fields) {
         fields.duration != null && String(fields.duration).trim() !== ""
           ? String(fields.duration).trim()
           : null,
-      repeat: oldRep,
+      repeat: nextRepeat,
     };
     goals[gIdx] = {
       id: prev.id,

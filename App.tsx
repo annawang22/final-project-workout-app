@@ -11,7 +11,12 @@ import MainTabNavigator from "./navigation/MainTabNavigator";
 import type { RootStackParamList } from "./navigation/types";
 import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
-import { getUsers, isLoggedIn, recoverActiveUserIfNeeded } from "./utils/storage";
+import {
+  getUsers,
+  isLoggedIn,
+  recoverActiveUserIfNeeded,
+  refreshDebugDateOverrideCache,
+} from "./utils/storage";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -25,6 +30,7 @@ export default function App() {
     let cancelled = false;
     void (async () => {
       await recoverActiveUserIfNeeded();
+      await refreshDebugDateOverrideCache();
       const users = await getUsers();
       const loggedIn = await isLoggedIn();
       if (cancelled) {

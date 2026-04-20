@@ -4,7 +4,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,12 +17,15 @@ import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatli
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import RepeatConfigModal from "../components/RepeatConfigModal";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
+import type { RepeatConfig } from "../types/repeat";
 import {
   addExerciseToGoal,
   deleteExerciseFromGoal,
   getGoalById,
   reorderExercisesInGoal,
+  sanitizeRepeatConfig,
   updateExerciseInGoal,
 } from "../utils/storage";
 
@@ -34,13 +36,24 @@ export type Exercise = {
   reps: number | null;
   weight: number | null;
   duration: string | null;
-  repeat: null | unknown;
+  repeat: RepeatConfig | null;
 };
 
 type Nav = NativeStackNavigationProp<GoalsStackParamList, "GoalDetail">;
 type R = RouteProp<GoalsStackParamList, "GoalDetail">;
 
 const EMPTY = "Click to add exercise";
+
+function formatRepeatSummary(r: RepeatConfig): string {
+  const bits: string[] = [`Every ${r.interval} ${r.frequency}`];
+  if (r.frequency === "week" && r.daysOfWeek.length > 0) {
+    bits.push(r.daysOfWeek.map((d) => d.slice(0, 3)).join(", "));
+  }
+  if (r.endType === "date" && r.endDate) {
+    bits.push(`ends ${r.endDate}`);
+  }
+  return bits.join(" · ");
+}
 
 function formatExerciseSummary(ex: Exercise): string {
   const parts: string[] = [];
@@ -55,6 +68,9 @@ function formatExerciseSummary(ex: Exercise): string {
   }
   if (ex.duration) {
     parts.push(ex.duration);
+  }
+  if (ex.repeat) {
+    parts.push(formatRepeatSummary(ex.repeat));
   }
   return parts.join(" · ");
 }
@@ -77,15 +93,21 @@ export default function GoalDetailScreen() {
   const [weight, setWeight] = useState("");
   const [duration, setDuration] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [exerciseRepeat, setExerciseRepeat] = useState<RepeatConfig | null>(
+    null,
+  );
+  const [repeatModalOpen, setRepeatModalOpen] = useState(false);
 
   const reload = useCallback(async () => {
     const g = await getGoalById(goalId);
-    if (!g) {
+    if (!g || typeof g !== "object") {
       navigation.goBack();
       return;
     }
-    setGoalTitle(g.text);
-    setExercises((Array.isArray(g.exercises) ? g.exercises : []) as Exercise[]);
+    const row = g as { text?: unknown; exercises?: unknown };
+    setGoalTitle(row.text != null ? String(row.text) : "");
+    const ex = row.exercises;
+    setExercises((Array.isArray(ex) ? ex : []) as Exercise[]);
     setReady(true);
   }, [goalId, navigation]);
 
@@ -109,6 +131,8 @@ export default function GoalDetailScreen() {
     setWeight("");
     setDuration("");
     setFormError(null);
+    setExerciseRepeat(null);
+    setRepeatModalOpen(false);
   }, []);
 
   const openAdd = useCallback(() => {
@@ -119,6 +143,7 @@ export default function GoalDetailScreen() {
     setWeight("");
     setDuration("");
     setFormError(null);
+    setExerciseRepeat(null);
     setModalOpen(true);
   }, []);
 
@@ -130,6 +155,7 @@ export default function GoalDetailScreen() {
     setWeight(ex.weight != null ? String(ex.weight) : "");
     setDuration(ex.duration ?? "");
     setFormError(null);
+    setExerciseRepeat(sanitizeRepeatConfig(ex.repeat) as RepeatConfig | null);
     setModalOpen(true);
   }, []);
 
@@ -140,7 +166,14 @@ export default function GoalDetailScreen() {
       return;
     }
     setFormError(null);
-    const fields = { name: n, sets, reps, weight, duration };
+    const fields = {
+      name: n,
+      sets,
+      reps,
+      weight,
+      duration,
+      repeat: exerciseRepeat,
+    };
     if (editingId) {
       const ok = await updateExerciseInGoal(goalId, editingId, fields);
       if (!ok) {
@@ -156,7 +189,18 @@ export default function GoalDetailScreen() {
     }
     closeModal();
     await reload();
-  }, [closeModal, duration, editingId, goalId, name, reps, sets, weight, reload]);
+  }, [
+    closeModal,
+    duration,
+    editingId,
+    exerciseRepeat,
+    goalId,
+    name,
+    reps,
+    sets,
+    weight,
+    reload,
+  ]);
 
   const removeExercise = useCallback(async () => {
     if (!editingId) {
@@ -309,15 +353,17 @@ export default function GoalDetailScreen() {
               />
               <Pressable
                 style={({ pressed }) => [styles.repeatBtn, pressed && styles.pressed]}
-                onPress={() =>
-                  Alert.alert(
-                    "Repeat",
-                    "Repeat rules will be available in a future update.",
-                  )
-                }
+                onPress={() => setRepeatModalOpen(true)}
               >
-                <Text style={styles.repeatLabel}>Repeat (coming soon)</Text>
+                <Text style={styles.repeatLabel}>Repeat</Text>
               </Pressable>
+              {exerciseRepeat ? (
+                <Text style={styles.repeatSummary}>
+                  {formatRepeatSummary(exerciseRepeat)}
+                </Text>
+              ) : (
+                <Text style={styles.repeatSummaryMuted}>No repeat</Text>
+              )}
               {formError ? (
                 <Text style={styles.errorText}>{formError}</Text>
               ) : null}
@@ -349,6 +395,16 @@ export default function GoalDetailScreen() {
           </KeyboardAvoidingView>
         </Pressable>
       </Modal>
+
+      <RepeatConfigModal
+        visible={repeatModalOpen}
+        initialRepeat={exerciseRepeat}
+        onCancel={() => setRepeatModalOpen(false)}
+        onApply={(r) => {
+          setExerciseRepeat(r);
+          setRepeatModalOpen(false);
+        }}
+      />
     </GestureHandlerRootView>
   );
 }
@@ -420,9 +476,11 @@ const styles = StyleSheet.create({
   half: { flex: 1, marginRight: 8 },
   repeatBtn: {
     paddingVertical: 10,
-    marginBottom: 6,
+    marginBottom: 2,
   },
   repeatLabel: { color: "#06c", fontSize: 16 },
+  repeatSummary: { fontSize: 13, color: "#333", marginBottom: 8 },
+  repeatSummaryMuted: { fontSize: 13, color: "#888", marginBottom: 8 },
   errorText: { color: "#c00", marginBottom: 6 },
   modalActions: {
     flexDirection: "row",
