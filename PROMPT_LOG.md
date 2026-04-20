@@ -321,3 +321,159 @@ Create data as User B
 Kill app → log back into User A
 User A’s original data should still exist and be unchanged
 No cross-over at any point
+
+15) nice work. one slight change i want to make is when i am on the goals page with the list of goals, and i click once on the goal to see the drop down of exercises, i would like you to provide more. what i mean by this is for example, if i had an exercise called sprints and i had listed 8 reps and 30 secs, when it is listed underneath the goal run marathon, i would like to see sprints (8 reps x 30 secs). can you describe to me what i just asked you to do? don't implement anything until i agree with your interpretation on what i just told you to do.
+16) great job. i would like to add one more thing: when you are on the goals page and you click on one goal to get the exercise dropdown and then you click on another goal for its dropdown, the previous goal dropdown shouldn't close unless the user clicks on that goal again to close it manually. repeat back to me on what i want you to implement. don't implement anything until i agree with your interpretation. 
+17) yes perfect. please implement this.
+
+## RETURNED TO CHATGPT PRO 
+4) please write my phase 4 prompt
+5) for debugging purposes, do you think it would be helpful to have a place where i can toggle the date of the app to see if the repeat on the exercises actually work? because im confused on how i would test that this works otherwise. if you agree with me, could you rewrite the prompt for phase 4 to include this. if you don't agree with me, explain to me why 
+6) so where is this debug UI date changer going to be exactly?
+7) is having this debug UI date changer in the profile screen currently in my phase 4 prompt? if so, great. if not can you add that into my phase 4 prompt?
+8) are you sure that this prompt is okay? the only thing that is on my profile page is the logout button and the home screen has not been programmed yet. just give me some confirmation or not confirmation.
+
+## RETURNED TO CURSOR PRO (AGENT)
+18) Phase 3 is complete and verified. We are now starting Phase 4.
+Read SPEC.md and review the Phase 4 section in full before writing any code.
+Your job is to complete every task in Phase 4 and verify every item in the "Done When" checklist before stopping. Do not start Phase 5.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All exercise data, including repeat rules, must remain scoped per user
+Continue using user-specific storage keys
+No cross-user data access under any condition
+2. Repeat Logic Must Be Safe
+Missing or partial repeat configs must never crash the app
+All repeat handling must be defensive
+3. Dev-Only Date Override (MANDATORY)
+You must implement a debug-only date override system to test repeat logic.
+Requirements:
+Real system date is the default
+Create a helper function (e.g., getEffectiveToday())
+All date logic must use this helper instead of new Date()
+Allow setting and clearing an override date (YYYY-MM-DD)
+Persist override in AsyncStorage
+Add a clear code comment marking this as DEBUG ONLY
+
+Build the following:
+
+1. Repeat Data Schema
+{
+  frequency: "week",
+  interval: 1,
+  daysOfWeek: ["Tuesday"],
+  startDate: "YYYY-MM-DD",
+  endType: "never",
+  endDate: null
+}
+
+If not configured → repeat = null
+Must persist and survive edits
+
+2. Repeat Button
+Inside Add/Edit Exercise modal:
+Add a Repeat button
+Opens Repeat Configuration UI
+Keep this separate from main form state
+
+3. Repeat Configuration UI
+Allow user to configure:
+Frequency
+Day / Week / Month / Year
+Interval
+Number input (default 1)
+Days of Week
+Only when frequency = week
+Multi-select (Sun–Sat)
+Starts
+Today or date picker
+Ends
+Never or date picker
+
+4. Saving Repeat
+Build valid repeat object
+Attach to exercise
+Save via user-scoped storage
+Cancel must not modify existing data
+
+5. Editing Repeat
+Pre-fill if repeat exists
+Overwrite on save
+Allow removing repeat → set to null
+
+6. Validation + Edge Cases
+Handle safely:
+Missing daysOfWeek (week)
+Invalid interval
+Missing start date
+End date before start date
+Partial configs
+No crashes allowed.
+
+7. DEBUG UI — Profile Screen (REQUIRED EXACT LOCATION)
+You must add a temporary debug section inside the Profile screen.
+Placement:
+Below profile info
+Clearly labeled: "DEBUG (TEMPORARY)"
+UI must include:
+Display:
+"Current App Date: <value from getEffectiveToday()>"
+Button: Set Override Date
+Opens date picker or input
+Saves override
+Button: Clear Override
+Removes override and returns to real date
+Rules:
+Must not interfere with normal Profile functionality
+Must be clearly marked as temporary/debug-only
+Must persist after killing and reopening the app
+Add a code comment explaining:
+This exists to test repeat scheduling without changing device date
+
+8. Persistence Requirements
+Repeat config must:
+persist after restart
+remain tied to correct user
+survive edits
+Debug override must:
+persist after restart
+clear cleanly
+
+9. No Full Home Logic Yet
+Do NOT fully implement repeat-based filtering in Home yet
+You may create helper logic if needed, but keep it isolated
+
+When you are done:
+Go through the Phase 4 "Done When" checklist in SPEC.md and confirm each item passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren't specified
+How you implemented the debug date override
+How you handled repeat edge cases
+Anything that needs my input before Phase 5
+
+Do not start Phase 5.
+
+I will run these tests:
+Repeat Tests
+Weekly repeat (Tuesday) → persists after restart
+No repeat → stored as null
+End date → persists correctly
+Debug Date Tests
+Set override → kill app → reopen → still applied
+Clear override → returns to real date
+Change override multiple times → no crash
+Editing Tests
+Modify repeat → persists
+Remove repeat → becomes null
+Edge Cases
+Partial input → no crash
+Invalid interval → no crash
+Bad date range → blocked or corrected
+🔐 Multi-User Tests
+User A creates repeat data
+User B logs in → sees none of it
+Switch back → User A data intact
+
+19) ok so i see some initial problems: when i click on repeat, i don't see any popup to toggle the repeat. do you understand what the problem is? explain to me what the problem is. if i agree, i will allow you to fix it.
