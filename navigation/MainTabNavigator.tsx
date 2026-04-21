@@ -2,31 +2,34 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet } from "react-native";
 
+import { useTheme } from "../context/ThemeContext";
 import HomeScreen from "../screens/HomeScreen";
+import { TAB_BAR } from "../utils/theme";
 import GoalsStackNavigator from "./GoalsStackNavigator";
 import ProfileStackNavigator from "./ProfileStackNavigator";
 import ProfileTabBarIcon from "./ProfileTabBarIcon";
 import { TabBarProfileProvider } from "./TabBarProfileContext";
-import { COLORS, TAB_BAR } from "../utils/theme";
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
+  const { colors } = useTheme();
+
   return (
     <TabBarProfileProvider>
       <Tab.Navigator
         screenOptions={{
           headerTitleAlign: "center",
-          tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: COLORS.textSecondary,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarLabelStyle: {
             fontSize: TAB_BAR.labelFontSize,
             fontWeight: TAB_BAR.labelFontWeight,
             letterSpacing: TAB_BAR.labelLetterSpacing,
           },
           tabBarStyle: {
-            backgroundColor: COLORS.background,
-            borderTopColor: COLORS.border,
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
             borderTopWidth: StyleSheet.hairlineWidth,
           },
         }}

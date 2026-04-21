@@ -1,5 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Platform,
@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import type { RepeatConfig, RepeatFrequency } from "../types/repeat";
 import {
   formatDateYMD,
@@ -47,12 +49,93 @@ function parseYmd(s: string): Date | null {
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
+function createRepeatStyles(colors: AppColors) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "flex-end",
+    },
+    fill: { flex: 1 },
+    card: {
+      maxHeight: "88%",
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 14,
+      borderTopRightRadius: 14,
+      padding: 16,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 10,
+      color: colors.textPrimary,
+    },
+    label: {
+      fontSize: 13,
+      fontWeight: "600",
+      marginTop: 8,
+      marginBottom: 4,
+      color: colors.textPrimary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 6,
+      color: colors.textPrimary,
+    },
+    rowWrap: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginBottom: 4,
+    },
+    row: { flexDirection: "row", flexWrap: "wrap", marginBottom: 6 },
+    chip: {
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginRight: 4,
+      marginBottom: 4,
+    },
+    chipOn: {
+      backgroundColor: colors.interactiveStrong,
+      borderColor: colors.interactiveStrong,
+    },
+    chipText: { fontSize: 13, color: colors.textPrimary },
+    chipTextOn: { color: colors.onInteractive },
+    linkBtn: { marginBottom: 8 },
+    link: { color: colors.link, fontSize: 16 },
+    error: { color: colors.danger, marginTop: 8 },
+    removeBtn: { marginTop: 12, marginBottom: 8 },
+    removeText: { color: colors.danger, fontSize: 15 },
+    actions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginTop: 12,
+    },
+    actionCancel: { marginRight: 16 },
+    primary: {
+      backgroundColor: colors.interactiveStrong,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    primaryText: { color: colors.onInteractive, fontWeight: "600" },
+  });
+}
+
 export default function RepeatConfigModal({
   visible,
   initialRepeat,
   onApply,
   onCancel,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createRepeatStyles(colors), [colors]);
   const [frequency, setFrequency] = useState<RepeatFrequency>("week");
   const [intervalStr, setIntervalStr] = useState("1");
   const [days, setDays] = useState<string[]>([]);
@@ -194,6 +277,7 @@ export default function RepeatConfigModal({
               onChangeText={setIntervalStr}
               keyboardType="number-pad"
               placeholder="1"
+              placeholderTextColor={colors.placeholder}
             />
 
             {frequency === "week" ? (
@@ -260,6 +344,7 @@ export default function RepeatConfigModal({
                   value={startYmd}
                   onChangeText={setStartYmd}
                   placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.placeholder}
                 />
                 <Pressable
                   style={styles.linkBtn}
@@ -306,6 +391,7 @@ export default function RepeatConfigModal({
                   value={endYmd}
                   onChangeText={setEndYmd}
                   placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.placeholder}
                 />
                 <Pressable
                   style={styles.linkBtn}
@@ -371,65 +457,3 @@ export default function RepeatConfigModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  fill: { flex: 1 },
-  card: {
-    maxHeight: "88%",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    padding: 16,
-  },
-  title: { fontSize: 18, fontWeight: "700", marginBottom: 10 },
-  label: { fontSize: 13, fontWeight: "600", marginTop: 8, marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 6,
-  },
-  rowWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 4,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", marginBottom: 6 },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginRight: 4,
-    marginBottom: 4,
-  },
-  chipOn: { backgroundColor: "#222", borderColor: "#222" },
-  chipText: { fontSize: 13, color: "#222" },
-  chipTextOn: { color: "#fff" },
-  linkBtn: { marginBottom: 8 },
-  link: { color: "#06c", fontSize: 16 },
-  error: { color: "#c00", marginTop: 8 },
-  removeBtn: { marginTop: 12, marginBottom: 8 },
-  removeText: { color: "#c00", fontSize: 15 },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  actionCancel: { marginRight: 16 },
-  primary: {
-    backgroundColor: "#222",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  primaryText: { color: "#fff", fontWeight: "600" },
-});

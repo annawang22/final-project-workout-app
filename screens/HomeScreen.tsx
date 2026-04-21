@@ -1,5 +1,5 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -32,8 +32,9 @@ import {
 } from "../utils/storage";
 
 import AppHeader from "../components/AppHeader";
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import {
-  COLORS,
   CONTENT_BOTTOM,
   SCREEN_HORIZONTAL,
   SPACING,
@@ -42,7 +43,147 @@ import {
 
 const EMPTY_STATE = "YAY you finished all exercises for the day";
 
+function createHomeStyles(colors: AppColors) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: 120,
+    },
+    dateText: {
+      ...typography.subheader,
+      color: colors.textPrimary,
+      textAlign: "center",
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingBottom: SPACING.sm,
+    },
+    emptyWrap: {
+      flex: 1,
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      justifyContent: "center",
+    },
+    emptyText: {
+      ...typography.body,
+      textAlign: "center",
+      color: colors.textSecondary,
+      lineHeight: 24,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.neutralBorderSoft,
+      marginRight: 12,
+      marginTop: 2,
+    },
+    rowBody: { flex: 1 },
+    rowTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.textPrimary,
+    },
+    rowMeta: { fontSize: 14, color: colors.rowMeta, marginTop: 4 },
+    rowHint: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+    rowCompleting: { opacity: 0.45 },
+    checkboxHit: { paddingVertical: 4, paddingRight: 4 },
+    checkboxDone: {
+      borderColor: colors.interactiveStrong,
+      backgroundColor: colors.checkboxTrack,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxMark: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.interactiveStrong,
+    },
+    fab: {
+      position: "absolute",
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.interactiveStrong,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 4,
+    },
+    fabText: {
+      color: colors.onInteractive,
+      fontSize: 32,
+      lineHeight: 36,
+      fontWeight: "500",
+    },
+    pressed: { opacity: 0.75 },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "flex-end",
+    },
+    modalAvoid: { width: "100%" },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 12,
+      color: colors.textPrimary,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 4,
+      color: colors.textPrimary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 10,
+      color: colors.textPrimary,
+    },
+    row2: { flexDirection: "row" },
+    half: { flex: 1, marginRight: 8 },
+    errorText: { color: colors.danger, marginBottom: 8 },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    link: { color: colors.link, fontSize: 16, marginRight: 20 },
+    primaryBtn: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    primaryLabel: {
+      color: colors.onInteractive,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });
+}
+
 export default function HomeScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createHomeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const [dateHeader, setDateHeader] = useState("");
   const [rows, setRows] = useState<HomeMergedRow[]>([]);
@@ -174,7 +315,7 @@ export default function HomeScreen() {
       <View style={styles.screen}>
         <AppHeader title="Home" />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -198,7 +339,7 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{
             paddingHorizontal: SCREEN_HORIZONTAL,
-            paddingTop: 12,
+            paddingTop: SPACING.sm + SPACING.xs,
             paddingBottom: CONTENT_BOTTOM.homeList + insets.bottom,
           }}
           renderItem={({ item }) => {
@@ -269,7 +410,7 @@ export default function HomeScreen() {
               onPress={(e) => e.stopPropagation()}
               style={[
                 styles.modalCard,
-                { paddingBottom: 16 + insets.bottom },
+                { paddingBottom: SPACING.md + insets.bottom },
               ]}
             >
               <Text style={styles.modalTitle}>Add exercise</Text>
@@ -279,6 +420,7 @@ export default function HomeScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Exercise name"
+                placeholderTextColor={colors.placeholder}
               />
               <View style={styles.row2}>
                 <View style={styles.half}>
@@ -289,6 +431,7 @@ export default function HomeScreen() {
                     onChangeText={setSets}
                     keyboardType="number-pad"
                     placeholder="—"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
                 <View style={styles.half}>
@@ -299,6 +442,7 @@ export default function HomeScreen() {
                     onChangeText={setReps}
                     keyboardType="number-pad"
                     placeholder="—"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
               </View>
@@ -309,6 +453,7 @@ export default function HomeScreen() {
                 onChangeText={setWeight}
                 keyboardType="decimal-pad"
                 placeholder="—"
+                placeholderTextColor={colors.placeholder}
               />
               <Text style={styles.label}>Duration</Text>
               <TextInput
@@ -316,6 +461,7 @@ export default function HomeScreen() {
                 value={duration}
                 onChangeText={setDuration}
                 placeholder="e.g. 10 min"
+                placeholderTextColor={colors.placeholder}
               />
               {formError ? (
                 <Text style={styles.errorText}>{formError}</Text>
@@ -338,111 +484,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 120,
-  },
-  dateText: {
-    ...typography.subheader,
-    color: COLORS.textPrimary,
-    textAlign: "center",
-    paddingHorizontal: SCREEN_HORIZONTAL,
-    paddingBottom: SPACING.sm,
-  },
-  emptyWrap: {
-    flex: 1,
-    paddingHorizontal: SCREEN_HORIZONTAL,
-    justifyContent: "center",
-  },
-  emptyText: {
-    ...typography.body,
-    textAlign: "center",
-    color: COLORS.textSecondary,
-    lineHeight: 24,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#444",
-    marginRight: 12,
-    marginTop: 2,
-  },
-  rowBody: { flex: 1 },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  rowMeta: { fontSize: 14, color: "#555", marginTop: 4 },
-  rowHint: { fontSize: 12, color: "#888", marginTop: 4 },
-  rowCompleting: { opacity: 0.45 },
-  checkboxHit: { paddingVertical: 4, paddingRight: 4 },
-  checkboxDone: {
-    borderColor: "#222",
-    backgroundColor: "#eee",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxMark: { fontSize: 14, fontWeight: "700", color: "#222" },
-  fab: {
-    position: "absolute",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#222",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-  },
-  fabText: { color: "#fff", fontSize: 32, lineHeight: 36, fontWeight: "500" },
-  pressed: { opacity: 0.75 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalAvoid: { width: "100%" },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 20,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: "600", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-  row2: { flexDirection: "row" },
-  half: { flex: 1, marginRight: 8 },
-  errorText: { color: "#c00", marginBottom: 8 },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  link: { color: "#06c", fontSize: 16, marginRight: 20 },
-  primaryBtn: {
-    backgroundColor: "#222",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  primaryLabel: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});

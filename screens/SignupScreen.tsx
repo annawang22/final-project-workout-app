@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,12 +10,16 @@ import {
   View,
 } from "react-native";
 
+import { useTheme } from "../context/ThemeContext";
 import type { RootStackParamList } from "../navigation/types";
 import { getUsers, saveUser, setActiveUser, setLoggedIn } from "../utils/storage";
+import { createAuthFormStyles } from "../utils/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Signup">;
 
 export default function SignupScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createAuthFormStyles(colors), [colors]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +65,7 @@ export default function SignupScreen({ navigation }: Props) {
           value={username}
           onChangeText={setUsername}
           placeholder="Username"
+          placeholderTextColor={colors.placeholder}
         />
 
         <Text style={styles.label}>Password</Text>
@@ -70,6 +75,7 @@ export default function SignupScreen({ navigation }: Props) {
           value={password}
           onChangeText={setPassword}
           placeholder="Password"
+          placeholderTextColor={colors.placeholder}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -84,43 +90,3 @@ export default function SignupScreen({ navigation }: Props) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-  label: {
-    marginBottom: 6,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  error: {
-    color: "#c00",
-    marginBottom: 12,
-  },
-  primaryBtn: {
-    backgroundColor: "#222",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  primaryBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

@@ -19,7 +19,13 @@
 
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
     ActivityIndicator,
     Animated,
@@ -36,6 +42,8 @@ import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppHeader from "../components/AppHeader";
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import {
     addGoal,
@@ -45,7 +53,6 @@ import {
     updateGoalText,
 } from "../utils/storage";
 import {
-  COLORS,
   CONTENT_BOTTOM,
   SCREEN_HORIZONTAL,
   SPACING,
@@ -124,13 +131,222 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+function createGoalsStyles(colors: AppColors) {
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loading: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: 120,
+    },
+    listContent: {
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingTop: SPACING.md,
+    },
+    emptyWrap: {
+      flex: 1,
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingVertical: SPACING.lg,
+      justifyContent: "center",
+    },
+    emptyText: {
+      ...typography.body,
+      lineHeight: 24,
+      textAlign: "center",
+      color: colors.textSecondary,
+    },
+    rowOuter: {
+      marginBottom: 10,
+    },
+    swipeTrack: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      borderRadius: 10,
+      justifyContent: "center",
+      paddingHorizontal: 12,
+    },
+    swipeTrackActive: {
+      backgroundColor: colors.goalSwipeActive,
+    },
+    swipeTrackInactive: {
+      backgroundColor: colors.goalSwipeInactive,
+    },
+    swipeTrackLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    swipeTrackLabelActive: {
+      color: colors.goalAccent,
+      textAlign: "right",
+    },
+    swipeTrackLabelInactive: {
+      color: colors.goalSwipeLabelInactive,
+      textAlign: "right",
+    },
+    rowCard: {
+      borderRadius: 10,
+    },
+    rowMain: {
+      backgroundColor: colors.goalRowBg,
+      paddingVertical: 14,
+      paddingHorizontal: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.goalRowBorder,
+      borderRadius: 10,
+    },
+    rowTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    rowActive: {
+      backgroundColor: colors.goalRowActive,
+    },
+    rowPressed: {
+      backgroundColor: colors.goalRowPressed,
+    },
+    rowText: {
+      fontSize: 16,
+      color: colors.textPrimary,
+    },
+    activeBadge: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.goalAccent,
+      borderWidth: 1,
+      borderColor: colors.goalAccent,
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    previewBox: {
+      marginTop: 10,
+      paddingLeft: 4,
+    },
+    previewHint: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    previewLine: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      marginTop: 4,
+    },
+    fab: {
+      position: "absolute",
+      right: SPACING.md + SPACING.xs,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.interactiveStrong,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 4,
+    },
+    fabText: {
+      color: colors.onInteractive,
+      fontSize: 32,
+      lineHeight: 36,
+      fontWeight: "500",
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "flex-end",
+    },
+    modalAvoid: {
+      width: "100%",
+    },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 12,
+      color: colors.textPrimary,
+    },
+    modalLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 6,
+      color: colors.textPrimary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      minHeight: 80,
+      textAlignVertical: "top",
+      color: colors.textPrimary,
+    },
+    errorText: {
+      color: colors.danger,
+      marginTop: 8,
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginTop: 20,
+    },
+    secondaryBtn: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginRight: 12,
+    },
+    secondaryLabel: {
+      fontSize: 16,
+      color: colors.link,
+    },
+    primaryBtn: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    primaryLabel: {
+      fontSize: 16,
+      color: colors.onInteractive,
+      fontWeight: "600",
+    },
+    dangerBtn: {
+      marginTop: 16,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    dangerLabel: {
+      fontSize: 16,
+      color: colors.danger,
+    },
+  });
+}
+
+type GoalsStyles = ReturnType<typeof createGoalsStyles>;
+
 function GoalSwipeRow({
+  styles,
   goal,
   isExpanded,
   onTap,
   onLongPress,
   onCommit,
 }: {
+  styles: GoalsStyles;
   goal: Goal;
   isExpanded: boolean;
   onTap: () => void;
@@ -285,6 +501,8 @@ function GoalSwipeRow({
 }
 
 export default function GoalsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createGoalsStyles(colors), [colors]);
   const navigation = useNavigation<GoalsNav>();
   const insets = useSafeAreaInsets();
 
@@ -429,7 +647,7 @@ export default function GoalsScreen() {
       <View style={styles.screen}>
         <AppHeader title="My Goals" />
         <View style={styles.loading}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -453,6 +671,7 @@ export default function GoalsScreen() {
           renderItem={({ item }) => {
             return (
               <GoalSwipeRow
+                styles={styles}
                 goal={item}
                 isExpanded={expandedGoalIds.has(item.id)}
                 onTap={() => handleRowPress(item)}
@@ -498,7 +717,7 @@ export default function GoalsScreen() {
               onPress={(e) => e.stopPropagation()}
               style={[
                 styles.modalCard,
-                { paddingBottom: 16 + insets.bottom },
+                { paddingBottom: SPACING.md + insets.bottom },
               ]}
             >
               <Text style={styles.modalTitle}>
@@ -510,6 +729,7 @@ export default function GoalsScreen() {
                 value={inputValue}
                 onChangeText={setInputValue}
                 placeholder="e.g. Run 3 times per week"
+                placeholderTextColor={colors.placeholder}
                 multiline
                 autoFocus
               />
@@ -554,202 +774,3 @@ export default function GoalsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 120,
-  },
-  listContent: {
-    paddingHorizontal: SCREEN_HORIZONTAL,
-    paddingTop: SPACING.md,
-  },
-  emptyWrap: {
-    flex: 1,
-    paddingHorizontal: SCREEN_HORIZONTAL,
-    paddingVertical: SPACING.lg,
-    justifyContent: "center",
-  },
-  emptyText: {
-    ...typography.body,
-    lineHeight: 24,
-    textAlign: "center",
-    color: COLORS.textSecondary,
-  },
-  rowOuter: {
-    marginBottom: 10,
-  },
-  swipeTrack: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 10,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  swipeTrackActive: {
-    backgroundColor: "#cde6ff",
-  },
-  swipeTrackInactive: {
-    backgroundColor: "#edf2f6",
-  },
-  swipeTrackLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  swipeTrackLabelActive: {
-    color: "#0a66c2",
-    textAlign: "right",
-  },
-  swipeTrackLabelInactive: {
-    color: "#6c7785",
-    textAlign: "right",
-  },
-  rowCard: {
-    borderRadius: 10,
-  },
-  rowMain: {
-    backgroundColor: "#fff",
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#d9d9d9",
-    borderRadius: 10,
-  },
-  rowTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  rowActive: {
-    backgroundColor: "#e8f4ff",
-  },
-  rowPressed: {
-    backgroundColor: "#f5f5f5",
-  },
-  rowText: {
-    fontSize: 16,
-  },
-  activeBadge: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#0a66c2",
-    borderWidth: 1,
-    borderColor: "#0a66c2",
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  previewBox: {
-    marginTop: 10,
-    paddingLeft: 4,
-  },
-  previewHint: {
-    fontSize: 14,
-    color: "#666",
-  },
-  previewLine: {
-    fontSize: 14,
-    color: "#333",
-    marginTop: 4,
-  },
-  fab: {
-    position: "absolute",
-    right: SPACING.md + SPACING.xs,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#222",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-  },
-  fabText: {
-    color: "#fff",
-    fontSize: 32,
-    lineHeight: 36,
-    fontWeight: "500",
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalAvoid: {
-    width: "100%",
-  },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  modalLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  errorText: {
-    color: "#c00",
-    marginTop: 8,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 20,
-  },
-  secondaryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 12,
-  },
-  secondaryLabel: {
-    fontSize: 16,
-    color: "#06c",
-  },
-  primaryBtn: {
-    backgroundColor: "#222",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  primaryLabel: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "600",
-  },
-  dangerBtn: {
-    marginTop: 16,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  dangerLabel: {
-    fontSize: 16,
-    color: "#c00",
-  },
-});

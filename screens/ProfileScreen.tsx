@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -10,12 +10,15 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
 
 import AppHeader from "../components/AppHeader";
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import type { ProfileStackParamList } from "../navigation/profileStackTypes";
 import { navigationRef } from "../navigation/navigationRef";
 import { useTabBarProfile } from "../navigation/TabBarProfileContext";
@@ -31,7 +34,7 @@ import {
   saveProfile,
   setDebugDateOverride,
 } from "../utils/storage";
-import { COLORS, SPACING } from "../utils/theme";
+import { PROFILE_DARK_MODE_SWITCH, SPACING } from "../utils/theme";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 
@@ -40,7 +43,217 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 // Used for testing repeat logic without changing device date.
 const SHOW_DEBUG_TOOLS = false;
 
-function DebugDateOverrideSection({ onChanged }: { onChanged: () => void }) {
+function createProfileStyles(colors: AppColors) {
+  return StyleSheet.create({
+    screenRoot: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollFlex: {
+      flex: 1,
+    },
+    scroll: {
+      paddingHorizontal: SPACING.md,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING.xl + SPACING.md,
+    },
+    welcome: {
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: SPACING.lg,
+      textAlign: "center",
+      color: colors.textPrimary,
+    },
+    avatarWrap: { alignItems: "center", marginBottom: SPACING.lg },
+    avatarImg: {
+      width: 112,
+      height: 112,
+      borderRadius: 56,
+      marginBottom: 12,
+    },
+    avatarPlaceholder: {
+      backgroundColor: colors.card,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarPlaceholderText: {
+      fontSize: 40,
+      color: colors.placeholder,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 6,
+    },
+    toggleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: SPACING.md,
+      paddingVertical: SPACING.xs,
+    },
+    fieldLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.textPrimary,
+    },
+    editLink: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.link,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 8,
+      fontSize: 16,
+      color: colors.textPrimary,
+    },
+    fieldError: {
+      color: colors.danger,
+      marginBottom: 8,
+      fontSize: 14,
+    },
+    readonlyValue: {
+      fontSize: 16,
+      color: colors.textPrimary,
+      marginBottom: 16,
+    },
+    secondaryBtn: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.neutralBorderSoft,
+      marginBottom: 8,
+    },
+    secondaryBtnText: { fontSize: 16, color: colors.textPrimary },
+    removePhoto: {
+      fontSize: 14,
+      color: colors.link,
+      marginBottom: 8,
+    },
+    logbookBtn: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 14,
+      borderRadius: 8,
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    logbookBtnText: {
+      color: colors.onInteractive,
+      fontSize: 17,
+      fontWeight: "600",
+    },
+    logoutBtn: {
+      alignSelf: "flex-start",
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.neutralBorder,
+      marginBottom: 32,
+    },
+    logoutLabel: {
+      fontSize: 16,
+      color: colors.textPrimary,
+    },
+    debugSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      paddingTop: 20,
+    },
+    debugHeading: {
+      fontSize: 14,
+      fontWeight: "800",
+      color: colors.debugHeading,
+      marginBottom: 10,
+    },
+    debugLine: { fontSize: 15, marginBottom: 6, color: colors.textPrimary },
+    debugSub: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    debugBtn: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    debugBtnText: { color: colors.onInteractive, fontWeight: "600" },
+    debugBtnSecondary: {
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.neutralBorder,
+    },
+    debugBtnSecondaryText: { fontSize: 16, color: colors.textPrimary },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "center",
+      backgroundColor: colors.overlay,
+    },
+    modalBackdropInner: {
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: 24,
+    },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 14,
+      color: colors.textPrimary,
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      gap: 16,
+      marginTop: 8,
+    },
+    modalCancel: {
+      fontSize: 16,
+      color: colors.link,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+    modalSave: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    modalSaveText: {
+      color: colors.onInteractive,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    primaryBtnDisabled: { opacity: 0.5 },
+  });
+}
+
+type ProfileStyles = ReturnType<typeof createProfileStyles>;
+
+function DebugDateOverrideSection({
+  onChanged,
+  styles,
+  placeholderColor,
+}: {
+  onChanged: () => void;
+  styles: ProfileStyles;
+  placeholderColor: string;
+}) {
   const [overrideInput, setOverrideInput] = useState("");
 
   async function handleSetOverride() {
@@ -73,7 +286,7 @@ function DebugDateOverrideSection({ onChanged }: { onChanged: () => void }) {
         value={overrideInput}
         onChangeText={setOverrideInput}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor="#999"
+        placeholderTextColor={placeholderColor}
       />
       <Pressable style={styles.debugBtn} onPress={() => void handleSetOverride()}>
         <Text style={styles.debugBtnText}>Set override date</Text>
@@ -89,6 +302,8 @@ function DebugDateOverrideSection({ onChanged }: { onChanged: () => void }) {
 }
 
 export default function ProfileScreen({ navigation }: Props) {
+  const { colors, isDark, setDarkMode } = useTheme();
+  const styles = useMemo(() => createProfileStyles(colors), [colors]);
   const { refreshProfileTabIcon } = useTabBarProfile();
 
   /** Display name shown in Welcome + Name row (editable via modal). */
@@ -252,6 +467,18 @@ export default function ProfileScreen({ navigation }: Props) {
           {usernameLine}
         </Text>
 
+        <View style={styles.toggleRow}>
+          <Text style={styles.fieldLabel}>Dark Mode</Text>
+          <Switch
+            accessibilityLabel="Dark mode"
+            value={isDark}
+            onValueChange={(v) => void setDarkMode(v)}
+            trackColor={PROFILE_DARK_MODE_SWITCH.trackColor}
+            thumbColor={PROFILE_DARK_MODE_SWITCH.thumbColor}
+            ios_backgroundColor={PROFILE_DARK_MODE_SWITCH.ios_backgroundColor}
+          />
+        </View>
+
         <Pressable
           style={styles.logbookBtn}
           onPress={() => navigation.navigate("Logbook")}
@@ -264,7 +491,11 @@ export default function ProfileScreen({ navigation }: Props) {
         </Pressable>
 
         {SHOW_DEBUG_TOOLS ? (
-          <DebugDateOverrideSection onChanged={load} />
+          <DebugDateOverrideSection
+            onChanged={load}
+            styles={styles}
+            placeholderColor={colors.placeholder}
+          />
         ) : null}
       </ScrollView>
 
@@ -292,6 +523,7 @@ export default function ProfileScreen({ navigation }: Props) {
                   setModalNameError(null);
                 }}
                 placeholder="Your Name"
+                placeholderTextColor={colors.placeholder}
                 autoFocus
                 editable={!saving}
               />
@@ -317,171 +549,3 @@ export default function ProfileScreen({ navigation }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screenRoot: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollFlex: {
-    flex: 1,
-  },
-  scroll: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xl + SPACING.md,
-  },
-  welcome: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  avatarWrap: { alignItems: "center", marginBottom: 24 },
-  avatarImg: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    marginBottom: 12,
-  },
-  avatarPlaceholder: {
-    backgroundColor: "#e8e8e8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarPlaceholderText: { fontSize: 40, color: "#999" },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-  editLink: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#06c",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    fontSize: 16,
-  },
-  fieldError: { color: "#c00", marginBottom: 8, fontSize: 14 },
-  readonlyValue: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 16,
-  },
-  secondaryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#444",
-    marginBottom: 8,
-  },
-  secondaryBtnText: { fontSize: 16 },
-  removePhoto: {
-    fontSize: 14,
-    color: "#06c",
-    marginBottom: 8,
-  },
-  logbookBtn: {
-    backgroundColor: "#333",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  logbookBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
-  logoutBtn: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#888",
-    marginBottom: 32,
-  },
-  logoutLabel: {
-    fontSize: 16,
-  },
-  debugSection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#ccc",
-    paddingTop: 20,
-  },
-  debugHeading: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#a60",
-    marginBottom: 10,
-  },
-  debugLine: { fontSize: 15, marginBottom: 6 },
-  debugSub: { fontSize: 13, color: "#555", marginBottom: 12 },
-  debugBtn: {
-    backgroundColor: "#333",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  debugBtnText: { color: "#fff", fontWeight: "600" },
-  debugBtnSecondary: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#888",
-  },
-  debugBtnSecondaryText: { fontSize: 16 },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  modalBackdropInner: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    gap: 16,
-    marginTop: 8,
-  },
-  modalCancel: {
-    fontSize: 16,
-    color: "#06c",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  modalSave: {
-    backgroundColor: "#222",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  modalSaveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  primaryBtnDisabled: { opacity: 0.5 },
-});

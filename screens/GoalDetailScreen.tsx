@@ -1,7 +1,7 @@
 import type { RouteProp } from "@react-navigation/native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -18,6 +18,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import RepeatConfigModal from "../components/RepeatConfigModal";
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import type { RepeatConfig } from "../types/repeat";
 import {
@@ -28,6 +30,7 @@ import {
     sanitizeRepeatConfig,
     updateExerciseInGoal,
 } from "../utils/storage";
+import { SPACING } from "../utils/theme";
 
 export type Exercise = {
   id: string;
@@ -75,11 +78,138 @@ function formatExerciseSummary(ex: Exercise): string {
   return parts.join(" · ");
 }
 
+function createDetailStyles(colors: AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    listContainer: { flex: 1 },
+    emptyWrap: {
+      flex: 1,
+      padding: SPACING.lg,
+      justifyContent: "center",
+    },
+    emptyText: {
+      fontSize: 16,
+      textAlign: "center",
+      color: colors.textSecondary,
+    },
+    exRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      backgroundColor: colors.background,
+    },
+    dragHandle: { padding: 8, marginRight: 4 },
+    dragIcon: { fontSize: 20, color: colors.textSecondary },
+    exMain: { flex: 1 },
+    exName: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
+    exMeta: { fontSize: 14, color: colors.rowMeta, marginTop: 2 },
+    fab: {
+      position: "absolute",
+      right: SPACING.md + SPACING.xs,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.interactiveStrong,
+      alignItems: "center",
+      justifyContent: "center",
+      elevation: 4,
+    },
+    fabText: {
+      color: colors.onInteractive,
+      fontSize: 32,
+      lineHeight: 36,
+      fontWeight: "500",
+    },
+    pressed: { opacity: 0.7 },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "flex-end",
+    },
+    modalAvoid: { width: "100%" },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      padding: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 12,
+      color: colors.textPrimary,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 4,
+      color: colors.textPrimary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 10,
+      color: colors.textPrimary,
+    },
+    row2: { flexDirection: "row" },
+    half: { flex: 1, marginRight: 8 },
+    repeatBtn: {
+      paddingVertical: 10,
+      marginBottom: 2,
+    },
+    repeatLabel: { color: colors.link, fontSize: 16 },
+    repeatSummary: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      marginBottom: 8,
+    },
+    repeatSummaryMuted: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 8,
+    },
+    errorText: { color: colors.danger, marginBottom: 6 },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    link: { color: colors.link, fontSize: 16, marginRight: 20 },
+    primaryBtn: {
+      backgroundColor: colors.interactiveStrong,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+    },
+    primaryLabel: {
+      color: colors.onInteractive,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    dangerBtn: { marginTop: 16, alignItems: "center" },
+    dangerText: { color: colors.danger, fontSize: 16 },
+  });
+}
+
 export default function GoalDetailScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<R>();
   const { goalId } = params;
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createDetailStyles(colors), [colors]);
 
   const [ready, setReady] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
@@ -225,7 +355,7 @@ export default function GoalDetailScreen() {
   if (!ready) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -280,7 +410,7 @@ export default function GoalDetailScreen() {
           onPress={openAdd}
           style={({ pressed }) => [
             styles.fab,
-            { bottom: 24 + insets.bottom },
+            { bottom: SPACING.lg + insets.bottom },
             pressed && styles.pressed,
           ]}
           hitSlop={6}
@@ -304,7 +434,7 @@ export default function GoalDetailScreen() {
               onPress={(e) => e.stopPropagation()}
               style={[
                 styles.modalCard,
-                { paddingBottom: 16 + insets.bottom },
+                { paddingBottom: SPACING.md + insets.bottom },
               ]}
             >
               <Text style={styles.modalTitle}>
@@ -316,6 +446,7 @@ export default function GoalDetailScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Exercise name"
+                placeholderTextColor={colors.placeholder}
               />
               <View style={styles.row2}>
                 <View style={styles.half}>
@@ -326,6 +457,7 @@ export default function GoalDetailScreen() {
                     onChangeText={setSets}
                     keyboardType="number-pad"
                     placeholder="—"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
                 <View style={styles.half}>
@@ -336,6 +468,7 @@ export default function GoalDetailScreen() {
                     onChangeText={setReps}
                     keyboardType="number-pad"
                     placeholder="—"
+                    placeholderTextColor={colors.placeholder}
                   />
                 </View>
               </View>
@@ -346,6 +479,7 @@ export default function GoalDetailScreen() {
                 onChangeText={setWeight}
                 keyboardType="decimal-pad"
                 placeholder="—"
+                placeholderTextColor={colors.placeholder}
               />
               <Text style={styles.label}>Duration</Text>
               <TextInput
@@ -353,6 +487,7 @@ export default function GoalDetailScreen() {
                 value={duration}
                 onChangeText={setDuration}
                 placeholder="e.g. 10 min"
+                placeholderTextColor={colors.placeholder}
               />
               <Pressable
                 style={({ pressed }) => [styles.repeatBtn, pressed && styles.pressed]}
@@ -411,94 +546,3 @@ export default function GoalDetailScreen() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#fff" },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  listContainer: { flex: 1 },
-  emptyWrap: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-  emptyText: { fontSize: 16, textAlign: "center", color: "#333" },
-  exRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    backgroundColor: "#fff",
-  },
-  dragHandle: { padding: 8, marginRight: 4 },
-  dragIcon: { fontSize: 20, color: "#666" },
-  exMain: { flex: 1 },
-  exName: { fontSize: 16, fontWeight: "600" },
-  exMeta: { fontSize: 14, color: "#555", marginTop: 2 },
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#222",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-  },
-  fabText: { color: "#fff", fontSize: 32, lineHeight: 36, fontWeight: "500" },
-  pressed: { opacity: 0.7 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-  },
-  modalAvoid: { width: "100%" },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 20,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: "600", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-  row2: { flexDirection: "row" },
-  half: { flex: 1, marginRight: 8 },
-  repeatBtn: {
-    paddingVertical: 10,
-    marginBottom: 2,
-  },
-  repeatLabel: { color: "#06c", fontSize: 16 },
-  repeatSummary: { fontSize: 13, color: "#333", marginBottom: 8 },
-  repeatSummaryMuted: { fontSize: 13, color: "#888", marginBottom: 8 },
-  errorText: { color: "#c00", marginBottom: 6 },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  link: { color: "#06c", fontSize: 16, marginRight: 20 },
-  primaryBtn: {
-    backgroundColor: "#222",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  primaryLabel: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  dangerBtn: { marginTop: 16, alignItems: "center" },
-  dangerText: { color: "#c00", fontSize: 16 },
-});

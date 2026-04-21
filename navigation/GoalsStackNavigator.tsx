@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+import { useTheme } from "../context/ThemeContext";
 import GoalDetailScreen from "../screens/GoalDetailScreen";
 import GoalsScreen from "../screens/GoalsScreen";
 import type { GoalsStackParamList } from "./goalsStackTypes";
@@ -7,14 +8,22 @@ import type { GoalsStackParamList } from "./goalsStackTypes";
 const Stack = createNativeStackNavigator<GoalsStackParamList>();
 
 export default function GoalsStackNavigator() {
+  const { colors } = useTheme();
+
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.background },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.textPrimary,
+        headerTitleStyle: { color: colors.textPrimary },
+      }}
+    >
       <Stack.Screen
         name="GoalsList"
         component={GoalsScreen}
         options={{
           headerShown: false,
-          /** Used as iOS back label on Goal Detail (not the route key `GoalsList`). */
           title: "Goals",
         }}
       />
@@ -23,7 +32,6 @@ export default function GoalsStackNavigator() {
         component={GoalDetailScreen}
         options={{
           title: "Goal",
-          /** iOS back chevron label (parent route is `GoalsList`). */
           headerBackTitle: "Goals",
         }}
       />

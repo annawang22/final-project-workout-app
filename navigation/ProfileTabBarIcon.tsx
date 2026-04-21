@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { COLORS } from "../utils/theme";
+import { useTheme } from "../context/ThemeContext";
 
 import { useTabBarProfile } from "./TabBarProfileContext";
 
@@ -18,6 +18,7 @@ type Props = {
  * Icon footprint matches `size` so the tab bar stays aligned with Home / Goals.
  */
 export default function ProfileTabBarIcon({ focused, color: tint, size }: Props) {
+  const { colors } = useTheme();
   const { profileTabImageUri } = useTabBarProfile();
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -48,6 +49,7 @@ export default function ProfileTabBarIcon({ focused, color: tint, size }: Props)
     <View
       style={[
         styles.clip,
+        { backgroundColor: colors.card },
         {
           width: dim,
           height: dim,
@@ -70,6 +72,5 @@ export default function ProfileTabBarIcon({ focused, color: tint, size }: Props)
 const styles = StyleSheet.create({
   clip: {
     overflow: "hidden",
-    backgroundColor: COLORS.card,
   },
 });

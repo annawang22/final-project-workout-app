@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type { AppColors } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import type { ProfileStackParamList } from "../navigation/profileStackTypes";
 import {
   formatHomeDateHeader,
@@ -19,8 +21,92 @@ import {
   type HomeExerciseShape,
 } from "../utils/homeDisplay";
 import { getLogbook, undoLogbookExerciseToHome } from "../utils/storage";
+import { SCREEN_HORIZONTAL, SPACING } from "../utils/theme";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Logbook">;
+
+function createLogbookStyles(colors: AppColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    emptyWrap: {
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: SPACING.lg,
+      backgroundColor: colors.background,
+    },
+    emptyText: {
+      fontSize: 16,
+      textAlign: "center",
+      color: colors.textSecondary,
+    },
+    hint: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 12,
+      lineHeight: 18,
+    },
+    sectionHeader: {
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    sectionYmd: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      opacity: 0.65,
+      backgroundColor: colors.background,
+    },
+    rowPressed: { opacity: 0.9 },
+    checkboxDone: {
+      width: 24,
+      height: 24,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.neutralBorder,
+      marginRight: 12,
+      marginTop: 2,
+      backgroundColor: colors.card,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxMark: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.textSecondary,
+    },
+    rowBody: { flex: 1 },
+    rowTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.textPrimary,
+    },
+    rowMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+  });
+}
 
 function ymdToLocalDate(ymd: string): Date {
   const parts = String(ymd).trim().split("-").map(Number);
@@ -56,6 +142,8 @@ function rowUndoKey(dateKey: string, item: unknown): string {
 }
 
 export default function LogbookScreen({}: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createLogbookStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<
@@ -122,20 +210,26 @@ export default function LogbookScreen({}: Props) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (sections.length === 0 || sections.every((s) => s.data.length === 0)) {
     return (
-      <View style={[styles.emptyWrap, { paddingBottom: 24 + insets.bottom }]}>
+      <View
+        style={[
+          styles.emptyWrap,
+          { paddingBottom: SPACING.lg + insets.bottom },
+        ]}
+      >
         <Text style={styles.emptyText}>No logbook entries yet.</Text>
       </View>
     );
   }
 
   return (
+    <View style={styles.root}>
     <SectionList
       sections={sections}
       ListHeaderComponent={
@@ -190,77 +284,12 @@ export default function LogbookScreen({}: Props) {
         );
       }}
       contentContainerStyle={{
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 24 + insets.bottom,
+        paddingHorizontal: SCREEN_HORIZONTAL,
+        paddingTop: SPACING.sm,
+        paddingBottom: SPACING.lg + insets.bottom,
       }}
       stickySectionHeadersEnabled={false}
     />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyWrap: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#555",
-  },
-  hint: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  sectionHeader: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
-    backgroundColor: "#fff",
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#222",
-  },
-  sectionYmd: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 4,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#eee",
-    opacity: 0.65,
-  },
-  rowPressed: { opacity: 0.9 },
-  checkboxDone: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#888",
-    marginRight: 12,
-    marginTop: 2,
-    backgroundColor: "#f0f0f0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxMark: { fontSize: 12, fontWeight: "700", color: "#555" },
-  rowBody: { flex: 1 },
-  rowTitle: { fontSize: 16, fontWeight: "600", color: "#555" },
-  rowMeta: { fontSize: 14, color: "#777", marginTop: 4 },
-});

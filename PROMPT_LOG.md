@@ -1982,8 +1982,408 @@ Do not start UI Phase 3.
 ## RETURNED TO CHATGPT PRO
 20) awesome job. write me phase 3 prompt.
 
-## RETURN TO CURSOR PRO (AGENT)
-52) 
+## RETURNED TO CURSOR PRO (AGENT)
+52) UI Phase 2 is complete and verified. We are now starting UI Phase 3.
+Read SPECUIDesign.md and review the Phase UI-3 — Design System Foundation section in full before writing any code.
+Your job is to complete every task in UI Phase 3 and verify every item in the "Done When" checklist before stopping. Do not start UI Phase 4.
 
-## RETURN TO CHATGPT PRO
-21) 
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. This Is a Foundation Phase (HIGH IMPACT)
+Everything you do here will affect:
+Home
+Goals
+Profile
+Future styling phases
+⚠️ Mistakes here will multiply later.
+
+2. Do NOT Rewrite the App
+Do NOT:
+refactor entire screens
+move logic around
+rewrite navigation
+redesign components visually yet
+This phase is about creating structure, not redesigning everything.
+
+3. No Over-Engineering
+Do NOT:
+introduce heavy theming libraries
+create deeply nested abstractions
+overbuild tokens
+Keep it:
+👉 simple, reusable, and clear
+
+Build the following:
+
+1. Create a Centralized Design System File
+Create a file such as:
+/utils/theme.js
+
+This file will contain:
+colors
+spacing
+typography
+basic reusable style constants
+⚠️ This must be the single source of truth for UI styling moving forward.
+
+2. Define Color System
+Start with a simple but structured color palette:
+export const COLORS = {
+  background: "#FFFFFF",
+  textPrimary: "#000000",
+  textSecondary: "#666666",
+  primary: "#FC4C02", // Strava-style accent (you may adjust slightly)
+  border: "#E5E5E5",
+  card: "#F8F8F8",
+};
+
+Requirements:
+Do not over-add colors
+Keep palette minimal
+Ensure good contrast
+
+3. Define Spacing System
+Create a consistent spacing scale:
+export const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+};
+
+Rules:
+All padding/margin going forward should use this
+No random numbers like 13, 22, etc.
+
+4. Define Typography System
+Create a simple structure:
+export const TYPOGRAPHY = {
+  header: {
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  subheader: {
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  body: {
+    fontSize: 16,
+    fontWeight: "400",
+  },
+};
+
+⚠️ Do not overcomplicate fonts yet.
+
+5. Apply Design System (LIMITED SCOPE)
+Apply this system ONLY to:
+AppHeader component (from Phase 2)
+Basic screen containers (padding/background)
+Tab bar (light touch only)
+Do NOT:
+restyle cards yet
+redesign lists yet
+touch deep UI components yet
+
+6. Remove Hardcoded Styles (PARTIAL CLEANUP)
+Replace obvious hardcoded values like:
+padding: 17
+color: "#000"
+
+with:
+padding: SPACING.md
+color: COLORS.textPrimary
+
+⚠️ Only do this where it is safe and obvious
+Do NOT refactor everything aggressively
+
+7. Ensure Consistency Across Screens
+Verify:
+All screens use:
+same background color
+same horizontal padding
+Headers use TYPOGRAPHY.header
+Text uses defined typography where applicable
+
+8. Strava-Inspired Direction (SUBTLE ONLY)
+You are beginning to move toward a modern fitness app feel, but do NOT fully implement it yet.
+For now:
+clean backgrounds
+bold headers
+strong primary color
+clear spacing
+Do NOT:
+add heavy shadows
+add animations
+redesign layouts yet
+
+9. No Dark Mode Yet
+⚠️ Do NOT implement dark mode in this phase
+That is Phase UI-4
+But:
+structure colors in a way that makes dark mode possible later
+
+10. Edge Cases
+Handle safely:
+missing data
+null profile
+empty lists
+screen reloads
+No crashes allowed.
+
+When you are done:
+Go through the UI Phase 3 "Done When" checklist in SPECUIDesign.md and confirm each item passes.
+Then stop and tell me:
+What you built
+How you structured the theme system
+What parts of the app now use it
+Any decisions you made about colors/spacing
+Anything that needs my input before UI Phase 4
+
+Do not start UI Phase 4.
+
+53) please handle this error and explain to me why it occured and what you did to fix it:  ERROR  SyntaxError: C:\Users\hfang2\final-project-workout-app\screens\GoalsScreen.tsx: Identifier 'AppHeader' has already been declared. (49:7)
+
+  47 | import { COLORS, SCREEN_HORIZONTAL, SPACING } from "../utils/theme";
+  48 |
+> 49 | import AppHeader from "../components/AppHeader";
+     |        ^
+  50 |
+  51 | type Goal = {
+  52 |   id: string;
+    at constructor (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:365:19)
+    at TypeScriptParserMixin.raise (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:6599:19)
+    at TypeScriptScopeHandler.checkRedeclarationInScope (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:1619:19)
+    at TypeScriptScopeHandler.declareName (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:1585:12)
+    at TypeScriptScopeHandler.declareName (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:4880:11)
+    at TypeScriptParserMixin.declareNameFromIdentifier (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:7567:16)
+    at TypeScriptParserMixin.checkIdentifier (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:7563:12)
+    at TypeScriptParserMixin.checkLVal (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:7500:12)
+    at TypeScriptParserMixin.finishImportSpecifier (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14266:10)
+    at TypeScriptParserMixin.parseImportSpecifierLocal (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14263:31)
+    at TypeScriptParserMixin.maybeParseDefaultImportSpecifier (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14366:12)
+    at TypeScriptParserMixin.parseImportSpecifiersAndAfter (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14239:29)
+    at TypeScriptParserMixin.parseImport (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14235:17)
+    at TypeScriptParserMixin.parseImport (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:9353:26)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:12876:27)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:9508:18)
+    at TypeScriptParserMixin.parseStatementLike (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:12767:17)
+    at TypeScriptParserMixin.parseModuleItem (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:12744:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:13316:36)
+    at TypeScriptParserMixin.parseBlockBody (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:13309:10)
+    at TypeScriptParserMixin.parseProgram (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:12622:10)
+    at TypeScriptParserMixin.parseTopLevel (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:12612:25)
+    at TypeScriptParserMixin.parse (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14488:25)
+    at TypeScriptParserMixin.parse (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:10126:18)
+    at parse (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\parser\lib\index.js:14501:26)
+    at parser (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\parser\index.js:41:34)
+    at parser.next (<anonymous>)
+    at normalizeFile (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
+    at normalizeFile.next (<anonymous>)
+    at run (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\transformation\index.js:22:50)
+    at run.next (<anonymous>)
+    at transform (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\transform.js:22:33)
+    at transform.next (<anonymous>)
+    at evaluateSync (C:\Users\hfang2\final-project-workout-app\node_modules\gensync\index.js:251:28)
+    at sync (C:\Users\hfang2\final-project-workout-app\node_modules\gensync\index.js:89:14)
+    at stopHiding - secret - don't use this - v1 (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\errors\rewrite-stack-trace.js:47:12)
+    at Object.transformSync (C:\Users\hfang2\final-project-workout-app\node_modules\@babel\core\lib\transform.js:40:76)
+    at parseWithBabel (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\transformSync.js:75:18)
+    at transformSync (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\transformSync.js:54:16)
+    at Object.transform (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\babel-transformer.js:127:58)
+    at transformJSWithBabel (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\transform-worker\metro-transform-worker.js:468:47)
+    at Object.transform (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\transform-worker\metro-transform-worker.js:583:12)
+    at Object.transform (C:\Users\hfang2\final-project-workout-app\node_modules\@expo\metro-config\build\transform-worker\transform-worker.js:178:19)
+    at transformFile (C:\Users\hfang2\final-project-workout-app\node_modules\metro\src\DeltaBundler\Worker.flow.js:67:36)
+    at Object.transform (C:\Users\hfang2\final-project-workout-app\node_modules\metro\src\DeltaBundler\Worker.flow.js:42:10)
+    at execFunction (C:\Users\hfang2\final-project-workout-app\node_modules\jest-worker\build\workers\processChild.js:149:17)
+    at execHelper (C:\Users\hfang2\final-project-workout-app\node_modules\jest-worker\build\workers\processChild.js:137:5)
+    at execMethod (C:\Users\hfang2\final-project-workout-app\node_modules\jest-worker\build\workers\processChild.js:140:5)
+    at process.messageListener (C:\Users\hfang2\final-project-workout-app\node_modules\jest-worker\build\workers\processChild.js:44:7)
+    at process.emit (node:events:508:28)
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [Error: TransformError SyntaxError: C:\Users\hfang2\final-project-workout-app\screens\GoalsScreen.tsx: Identifier 'AppHeader' has already been declared. (49:7)
+
+  47 | import { COLORS, SCREEN_HORIZONTAL, SPACING } from "../utils/theme";
+  48 |
+> 49 | import AppHeader from "../components/AppHeader";
+     |        ^
+  50 |
+  51 | type Goal = {
+  52 |   id: string;]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
+ ERROR  [ReferenceError: Property 'TYPOGRAPHY' doesn't exist]
+
+54) I have spotted that when I clicked into the Goal Detail screen the back button says "GoalsList". similarly when I click into the Logbook screen, the back button says "ProfileMain". i don't like this. I just want it to say "Goals" and "Profile" respectively. repeat back to me what i just said to you. if i agree with your interpretation, i will then prompt you to continue.
+55) yes. that is exactly it. fix this and explain to me your approach.
+
+## RETURNED TO CHATGPT PRO
+21) nice! write me phase 4 prompt.
+
+## RETURNED TO CURSOR PRO (AGENT)
+56) UI Phase 3 is complete and verified. We are now starting UI Phase 4.
+Read SPECUIDesign.md and review the Phase UI-4 — Dark Mode Toggle section in full before writing any code.
+Your job is to complete every task in UI Phase 4 and verify every item in the "Done When" checklist before stopping. Do not start UI Phase 5.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. No Logic Changes
+This is UI state + styling only.
+Do NOT modify:
+goals logic
+exercises
+repeat system
+logbook
+auth
+navigation behavior
+
+2. Use the Existing Design System
+You must extend your existing /utils/theme.js.
+Do NOT:
+create a separate theme system
+hardcode colors inside components
+
+3. Single Source of Truth for Theme
+All colors must come from the theme system.
+No inline color values allowed after this phase.
+
+Build the following:
+
+1. Add Light + Dark Color Modes
+Update your theme file:
+export const LIGHT_COLORS = {
+  background: "#FFFFFF",
+  textPrimary: "#000000",
+  textSecondary: "#666666",
+  primary: "#FC4C02",
+  border: "#E5E5E5",
+  card: "#F8F8F8",
+};
+
+export const DARK_COLORS = {
+  background: "#000000",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#AAAAAA",
+  primary: "#FC4C02",
+  border: "#222222",
+  card: "#111111",
+};
+
+
+2. Create Theme Selector Logic
+Create a helper:
+getTheme(isDarkMode)
+
+This should return:
+LIGHT_COLORS or DARK_COLORS
+
+3. Global Dark Mode State
+You must:
+store dark mode preference in AsyncStorage
+load it on app start
+provide it globally (via context or top-level state)
+⚠️ Keep this simple:
+no over-engineered providers
+just enough to share across screens
+
+4. Profile Screen Toggle
+Add a toggle in Profile:
+Label: "Dark Mode"
+Switch component
+On toggle:
+update state immediately
+persist to AsyncStorage
+re-render UI instantly
+
+5. Apply Theme (Controlled Scope)
+Apply dark/light mode to:
+Required:
+screen background
+text colors
+headers
+tab bar
+basic containers
+Do NOT fully restyle:
+cards
+lists
+deep components
+We are layering, not rebuilding.
+
+6. Update Existing Components
+Update:
+AppHeader
+main screen wrappers
+tab navigator styling
+To use:
+const theme = getTheme(isDarkMode)
+
+
+7. Remove Remaining Hardcoded Colors
+Replace any remaining:
+color: "#000"
+backgroundColor: "#fff"
+
+with:
+color: theme.textPrimary
+backgroundColor: theme.background
+
+
+8. Persistence Requirements
+After kill-and-reopen:
+dark mode preference must persist
+app must load in correct mode immediately
+no flicker between themes
+
+9. Visual Quality Requirements
+Ensure:
+text is readable in both modes
+contrast is strong
+no “grey on grey” issues
+no invisible UI elements
+
+10. Edge Cases
+Handle safely:
+no stored preference
+switching users
+fast toggling
+screen transitions
+app reload
+No crashes allowed.
+
+When you are done:
+Go through the UI Phase 4 "Done When" checklist in SPECUIDesign.md and confirm each item passes.
+Then stop and tell me:
+What you built
+How you structured the theme switching logic
+Where dark mode state is stored
+How persistence is handled
+Any design decisions you made
+Anything that needs my input before UI Phase 5
+
+Do not start UI Phase 5
+
+57) great work so far. can you tell me your approach for potentially making the toggle for dark mode to be more smooth? it feels like there is a glitch there when you swipe, but im not too sure. don't implement anything. i just want to hear your thoughts. 
+58) i don't think you are understanding the issue im trying to hone in on. there is nothing wrong with the transition from light to dark mode once the toggle button is toggled. the issue i want to fix is when the user drags left to right for dark mode, there seems to be an aggressive "bubble" pop so it seems like there is like a glitch like there seems to be an overshoot in the drag of the toggle that is causing this. do you understand what im saying? reiterate to me what i just said. if i agree with you, we can move on to implementation.
+59) yes exactly. that is exactly the issue. could you explain to me what your approach would be to fix this issue? if i like it, i will prompt you to implement it.
+60) ok. try implementing one. let's see if that works. 
+
+## RETURNED TO CHATGPT PRO
+22) awesomeness! write me phase 5 prompt.
+23) wait i don't really want to deviate from what i have currently. why were you thinking of adding "cards"? could you explain this a little bit?
+24) yes please go ahead and rewrite phase 5 with a non card version.
+
+## RETURNED TO CURSOR PRO (AGENT)
+61) 
+
+## RETURNED TO CHATGPT PRO
+25) 
+
+## RETURNED TO CURSOR PRO (AGENT)
+62) 
