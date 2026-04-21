@@ -12,7 +12,7 @@ export default function ProfileStackNavigator() {
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
-        options={{ title: "Profile" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Logbook"

@@ -37,6 +37,7 @@ export default function MainTabNavigator() {
           name="Home"
           component={HomeScreen}
           options={{
+            headerShown: false,
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons
                 name={focused ? "home" : "home-outline"}

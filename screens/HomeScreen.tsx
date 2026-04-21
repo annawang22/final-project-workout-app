@@ -31,6 +31,8 @@ import {
   refreshDebugDateOverrideCache,
 } from "../utils/storage";
 
+import AppHeader, { APP_HEADER_HORIZONTAL } from "../components/AppHeader";
+
 const EMPTY_STATE = "YAY you finished all exercises for the day";
 
 export default function HomeScreen() {
@@ -162,17 +164,19 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={styles.screen}>
+        <AppHeader title="Home" />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-      <Text style={[styles.dateText, { paddingTop: 8 + insets.top }]}>
-        {dateHeader}
-      </Text>
+      <AppHeader title="Home" />
+      <Text style={[styles.dateText, { paddingTop: 10 }]}>{dateHeader}</Text>
 
       {rows.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -184,7 +188,7 @@ export default function HomeScreen() {
           extraData={completingKeys}
           keyExtractor={(item) => item.key}
           contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: APP_HEADER_HORIZONTAL,
             paddingTop: 12,
             paddingBottom: 100 + insets.bottom,
           }}
@@ -329,17 +333,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    minHeight: 120,
   },
   dateText: {
     fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: APP_HEADER_HORIZONTAL,
     paddingBottom: 8,
   },
   emptyWrap: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: APP_HEADER_HORIZONTAL,
     justifyContent: "center",
   },
   emptyText: {

@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 
+import AppHeader from "../components/AppHeader";
 import { useTabBarProfile } from "../navigation/TabBarProfileContext";
 import type { ProfileStackParamList } from "../navigation/profileStackTypes";
 import { navigationRef } from "../navigation/navigationRef";
@@ -198,8 +199,10 @@ export default function ProfileScreen({ navigation }: Props) {
   const usernameLine = username ?? "(signed in)";
 
   return (
-    <>
+    <View style={styles.screenRoot}>
+      <AppHeader title="Profile" />
       <ScrollView
+        style={styles.scrollFlex}
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
@@ -240,7 +243,13 @@ export default function ProfileScreen({ navigation }: Props) {
         <Text style={styles.readonlyValue}>{displayName}</Text>
 
         <Text style={styles.fieldLabel}>Username</Text>
-        <Text style={styles.readonlyValue}>{usernameLine}</Text>
+        <Text
+          style={styles.readonlyValue}
+          numberOfLines={4}
+          ellipsizeMode="tail"
+        >
+          {usernameLine}
+        </Text>
 
         <Pressable
           style={styles.logbookBtn}
@@ -304,11 +313,18 @@ export default function ProfileScreen({ navigation }: Props) {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  scrollFlex: {
+    flex: 1,
+  },
   scroll: {
     padding: 24,
     paddingBottom: 48,

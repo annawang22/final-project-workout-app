@@ -12,7 +12,7 @@ export default function GoalsStackNavigator() {
       <Stack.Screen
         name="GoalsList"
         component={GoalsScreen}
-        options={{ title: "My Goals" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="GoalDetail"

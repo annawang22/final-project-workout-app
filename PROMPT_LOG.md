@@ -1865,4 +1865,125 @@ No crashes if profile is null
 No crashes if image URI is missing or invalid
 Navigation still works exactly as before
 
-19) 
+## RETURNED TO CHATGPT PRO
+19) wonderful job. write me phase 2 prompt. 
+
+## RETURNED TO CURSOR PRO (AGENT)
+51) UI Phase 1 is complete and verified. We are now starting UI Phase 2.
+Read SPECUIDesign.md and review the Phase UI-2 — Unified Screen Headers section in full before writing any code.
+Your job is to complete every task in UI Phase 2 and verify every item in the "Done When" checklist before stopping. Do not start UI Phase 3.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. UI-Only Changes (NO LOGIC CHANGES)
+Do not modify:
+navigation logic
+storage logic
+auth flow
+goal/exercise logic
+repeat logic
+logbook logic
+This phase is strictly about visual consistency of headers.
+
+2. Do NOT Over-Engineer
+You are not building a full design system yet.
+Do NOT:
+introduce global theme providers
+refactor entire layouts
+redesign cards or lists
+Focus only on:
+👉 headers across Home, Goals, Profile
+
+3. Consistency > Creativity
+All three screens must look like they belong to the same app.
+Avoid:
+slightly different font sizes
+inconsistent spacing
+mismatched alignment
+
+Build the following:
+
+1. Standardized Header Component (REQUIRED)
+Create a reusable header component, for example:
+<AppHeader title="Home" />
+
+This component must be used on:
+Home screen
+Goals screen ("My Goals")
+Profile screen
+⚠️ Do NOT duplicate header styles across files. Centralize it.
+
+2. Header Styling Requirements
+All headers must share:
+Typography
+Same font size
+Same font weight (bold or semi-bold)
+Same font family (default RN font is fine for now)
+Layout
+Consistent top padding (account for safe area)
+Consistent horizontal padding
+Left-aligned text (recommended for modern apps)
+Spacing
+Clear separation from content below
+Consistent margin-bottom
+
+3. Header Content Rules
+Each screen should display:
+Home → "Home"
+Goals → "My Goals"
+Profile → "Profile"
+⚠️ Do not invent new labels
+
+4. Optional Subtle Enhancement (Allowed)
+You may optionally:
+add a thin divider under the header
+or add subtle spacing separation
+But:
+keep it minimal
+no heavy styling yet
+
+5. Safe Area Handling
+Ensure headers:
+do not overlap with status bar
+look correct on different devices
+Use appropriate safe area handling if needed.
+
+6. Alignment Consistency Check
+You must ensure:
+All three headers start at the exact same horizontal position
+All three headers have identical vertical spacing
+No screen looks “slightly off”
+This is where most UI bugs happen.
+
+7. No Regression Rule
+After implementing headers:
+No screen layout should break
+No content should be pushed off-screen
+Navigation should still feel identical
+
+8. Edge Cases
+Handle safely:
+long usernames (Profile screen layout should not break)
+empty profile data
+screen reloads
+different device sizes
+No crashes allowed.
+
+When you are done:
+Go through the UI Phase 2 "Done When" checklist in SPECUIDesign.md and confirm each item passes.
+Then stop and tell me:
+What you built
+How you structured the reusable header component
+Any styling decisions you made
+Whether all three screens are visually identical in header layout
+Anything that needs my input before UI Phase 3
+
+Do not start UI Phase 3.
+
+## RETURNED TO CHATGPT PRO
+20) awesome job. write me phase 3 prompt.
+
+## RETURN TO CURSOR PRO (AGENT)
+52) 
+
+## RETURN TO CHATGPT PRO
+21) 

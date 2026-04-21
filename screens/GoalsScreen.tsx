@@ -35,6 +35,7 @@ import {
 import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import AppHeader, { APP_HEADER_HORIZONTAL } from "../components/AppHeader";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import {
     addGoal,
@@ -418,14 +419,18 @@ export default function GoalsScreen() {
 
   if (!ready) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" />
+      <View style={styles.screen}>
+        <AppHeader title="My Goals" />
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
+      <AppHeader title="My Goals" />
       {goals.length === 0 ? (
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>{EMPTY_STATE}</Text>
@@ -552,13 +557,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    minHeight: 120,
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: APP_HEADER_HORIZONTAL,
+    paddingTop: 16,
   },
   emptyWrap: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: APP_HEADER_HORIZONTAL,
+    paddingVertical: 24,
     justifyContent: "center",
   },
   emptyText: {
