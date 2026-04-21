@@ -1,4 +1,5 @@
-import { formatDateYMD, getEffectiveToday, getGoals, sanitizeRepeatConfig } from "./storage";
+import { getGoals } from "./storage";
+import { repeatConfigMatchesDate } from "./repeatScheduling";
 
 type GoalShape = {
   id: string;
@@ -13,26 +14,13 @@ export type ActiveGoalExercise = {
   exercise: unknown;
 };
 
-function isRepeatEligibleForHomePhase5(rawRepeat: unknown, _todayYmd: string): boolean {
-  if (rawRepeat == null) {
-    return true;
-  }
-  const clean = sanitizeRepeatConfig(rawRepeat);
-  if (!clean) {
-    return false;
-  }
-  // Phase 5 intentionally does not apply full repeat/date matching yet.
-  // Keep this seam for Phase 6 when full filtering is introduced.
-  return true;
-}
-
 /**
- * Data-prep helper for Home (Phase 5): flatten exercises from active goals only.
- * - User isolation is inherited from `getGoals()` (active-user scoped key).
- * - Repeat is not fully filtered yet (Phase 6), but null/non-null is handled safely.
+ * Exercises from goals active on Home that match `effectiveDate` repeat rules.
+ * User isolation comes from `getGoals()` (active-user scoped storage key).
  */
-export async function getActiveGoalExercises(): Promise<ActiveGoalExercise[]> {
-  const todayYmd = formatDateYMD(getEffectiveToday());
+export async function getActiveGoalExercisesForDate(
+  effectiveDate: Date,
+): Promise<ActiveGoalExercise[]> {
   const goals = (await getGoals()) as GoalShape[];
   if (!Array.isArray(goals) || goals.length === 0) {
     return [];
@@ -48,7 +36,7 @@ export async function getActiveGoalExercises(): Promise<ActiveGoalExercise[]> {
         ex && typeof ex === "object" && "repeat" in ex
           ? (ex as { repeat?: unknown }).repeat
           : null;
-      if (!isRepeatEligibleForHomePhase5(repeat, todayYmd)) {
+      if (!repeatConfigMatchesDate(repeat, effectiveDate)) {
         continue;
       }
       out.push({

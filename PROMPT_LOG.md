@@ -642,3 +642,228 @@ Switch back to User A → original state preserved
 30) this sounds like a plan. as for the optional UX alignment with left pull to deactivate, only implement this if it is simple and easier to do then just toggle with right pull. otherwise, don't do the optional UX alignment. we can move onto implementation.
 31) this led me to a render error. "NativeViewGestureHandler must be used as a descendant of GestureHandlerRootView. Otherwise the gestures will not be recognized...". please fix this
 32) the render error is gone but now when i go to the goals page and try to toggle the bar, expo go completely shuts down and kicks me out. could you explain to me why this could be happening and how to fix this?
+
+## RETURNED TO CHATGPT PRO
+10) please write my phase 6 prompt. consider the fact that i have added a date changer debugger. in other words, when i override the date to make sure the exercises repeat, the date on the home screen should also repeat along with any other necessary adjustments. 
+
+## RETURNED TO CURSOR PRO (AGENT)
+33) Phase 5 is complete and verified. We are now starting Phase 6.
+Read SPEC.md and review the Phase 6 section in full before writing any code.
+Your job is to complete every task in Phase 6 and verify every item in the "Done When" checklist before stopping. Do not start Phase 7.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All Home data must remain fully scoped per user
+This includes:
+active goal exercises
+standalone Home exercises
+any date-based filtering logic
+No user can ever see another user’s Home data
+
+2. Use Effective App Date Everywhere
+You already implemented a debug date override in Phase 4.
+In this phase, you must use the effective app date everywhere relevant.
+That means:
+The date shown at the top of the Home screen must come from getEffectiveToday(), not from new Date()
+Repeat filtering must use getEffectiveToday()
+Any helper logic that checks “today” must use getEffectiveToday()
+If I override the date for debugging, the Home screen must immediately reflect that override consistently
+⚠️ Do not mix real device date and effective app date in different parts of the Home logic.
+
+3. Do NOT Build Completion / Logbook Yet
+Do NOT implement checkbox completion behavior yet
+Do NOT remove exercises from Home yet
+Do NOT write anything to logbook yet
+This phase is only about:
+rendering Home correctly
+combining data sources correctly
+respecting repeat/date logic correctly
+
+Build the following:
+
+1. Real Home Screen UI
+Replace the placeholder Home screen with a real screen that includes:
+Top: current effective app date
+Example format:
+"Monday, April 20"
+Main: combined list of exercises
+Each row shows:
+exercise name
+optional details if present:
+sets
+reps
+weight
+duration
+checkbox UI element (visual only for now; do not implement completion yet)
+Bottom-right: "+" button
+Bottom navigation must continue working
+
+2. Empty State
+If there are no exercises to show on Home, display this exact message:
+YAY you finished all exercises for the day
+
+Even though completion logic is not built yet, this is still the empty state to use whenever the Home list is empty.
+
+3. Exercise Sources for Home
+The Home screen must combine two sources:
+A. Goal-based exercises
+From goals where:
+isActiveOnHome === true
+These exercises should only appear if they match the effective app date according to repeat logic.
+B. Standalone Home exercises
+Added directly on the Home screen
+Stored separately under the user’s Home storage key
+Not tied to any goal
+Always shown until completion logic exists later
+⚠️ These two sources must remain separate in storage and in logic, even though they render in one combined list.
+
+4. Standalone Home Exercise Storage
+Add the necessary user-scoped storage helpers in /utils/storage.js for standalone Home exercises.
+Do not call AsyncStorage directly from screens.
+Use a user-scoped key for Home exercises, for example:
+home_exercises_<username>
+Continue following the rule that all storage access goes through /utils/storage.js.
+
+5. Add Standalone Exercise Flow
+Pressing the "+" button on Home should open a modal with:
+Name (required)
+Sets (optional)
+Reps (optional)
+Weight (optional)
+Duration (optional)
+Add button
+Cancel button
+Requirements:
+Do not include repeat configuration for standalone Home exercises
+On Add:
+block empty name
+create a standalone exercise object
+save it to user-scoped Home exercise storage
+close modal
+reset input state
+On Cancel:
+close modal
+reset input state
+
+6. Repeat Matching Logic for Goal-Based Exercises
+Now implement the logic that decides whether a goal-based exercise should appear on Home for the effective app date.
+Rules:
+If repeat === null
+Show the exercise every day as long as the parent goal is active
+If repeat !== null
+Use the repeat config to determine whether the exercise appears on the effective app date.
+Support at least the schema from Phase 4:
+{
+  frequency: "day" | "week" | "month" | "year",
+  interval: number,
+  daysOfWeek: string[],
+  startDate: "YYYY-MM-DD",
+  endType: "never" | "date",
+  endDate: "YYYY-MM-DD" | null
+}
+
+Requirements:
+startDate must have passed or be equal to effective app date
+if endType === "date", endDate must not have passed
+weekly repeats must respect daysOfWeek
+logic must be defensive and never crash on bad or partial data
+if repeat config is malformed, fail safely and do not crash the screen
+⚠️ All repeat evaluation must use getEffectiveToday()
+
+7. Date Override Behavior on Home (MANDATORY)
+Your debug date override must now affect the Home screen in all necessary ways.
+That means when I change the override date in the Profile debug section:
+the displayed date at the top of Home must update
+visible goal-based exercises must recalculate using the override date
+empty state must update correctly if no exercises match the override date
+standalone Home exercises must remain visible regardless of date override
+no crashes or stale state
+This must still work after killing and reopening the app.
+
+8. Combined List Rules
+When rendering the Home list:
+Do not duplicate exercises between sources
+Goal-based exercises and standalone Home exercises may have similar names, but should still be treated as separate entries if they come from different sources
+Deactivating a goal must remove only that goal’s exercises from Home
+Deactivating a goal must never remove standalone Home exercises
+
+9. Home Helper Logic
+Create utility/helper logic to keep Home clean and testable.
+Suggested structure:
+helper to get effective app date
+helper to check whether a repeat rule matches a date
+helper to collect active goal exercises for Home
+helper to merge active goal exercises + standalone Home exercises safely
+Keep this logic outside the Home UI component as much as possible.
+
+10. Validation + Edge Cases
+Handle all of these safely:
+no goals in storage
+goals with no exercises
+no standalone Home exercises
+malformed repeat data
+invalid numeric input in Home modal
+empty exercise name
+null/empty AsyncStorage state
+changing debug override date multiple times
+switching users with different Home data
+No crashes allowed.
+
+11. Persistence Requirements
+The following must persist correctly after kill-and-reopen:
+Home standalone exercises
+active goal exercises appearing correctly
+repeat-based filtering behavior
+effective app date display reflecting debug override
+user isolation between different accounts
+
+When you are done:
+Go through the Phase 6 "Done When" checklist in SPEC.md item by item and confirm each one passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren't specified
+How you implemented repeat matching
+How you handled the debug date override on Home
+Anything that needs my input before Phase 7
+
+Do not start Phase 7.
+
+I will run these kill-and-reopen tests:
+Home Date Tests
+With no override set, Home should show the real current date
+Set a debug override date in Profile
+Go back to Home → the displayed date should match the override date
+Kill app → reopen → Home should still show the override date until I clear it
+Clear override → Home should return to real current date
+
+Goal-Based Exercise Tests
+Active goal + repeat = null → exercise appears every day
+Active goal + weekly repeat on Tuesday → appears only when effective app date is Tuesday
+Change debug override date from Tuesday to Wednesday → Home list updates correctly
+Start date in future → exercise should not appear before start date
+End date passed → exercise should not appear
+
+Standalone Home Exercise Tests
+Add standalone Home exercise → appears immediately
+Kill app → reopen → still there
+Date override changes should not remove standalone Home exercises
+Standalone exercises must not be affected by goal activation toggles
+
+Empty State Tests
+No matching exercises → show:
+"YAY you finished all exercises for the day"
+Change override date so exercises match → empty state disappears
+Change override date so nothing matches → empty state returns
+
+Data Integrity Tests
+No duplicate rendering between goal-based and standalone sources
+Deactivating a goal removes only that goal’s exercises
+No crashes on null or malformed repeat data
+
+🔐 Multi-User Isolation Tests
+User A creates active goals and standalone Home exercises
+User B logs in → should see none of User A’s Home data
+User B creates different Home data
+Switch back to User A → original Home data still intact
+
+34) 

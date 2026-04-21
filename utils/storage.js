@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * - isLoggedIn      — boolean auth state
  * - activeUser      — string username for the current session (which account’s data to load)
  * - goals__u__*      — per-user goal lists (use goalsKeyForUser; legacy "goals" is migrated on read)
- * - home_exercises  — ExerciseObject[] (future: scope per user like goals)
+ * - home_exercises__u__* — per-user standalone Home exercises (legacy "home_exercises" is migrated on read)
  * - profile         — ProfileObject (name, username, image URI)
  * - logbook         — LogbookEntry[] completed exercise history
  *
@@ -23,6 +23,8 @@ const KEYS = {
   ACTIVE_USER: "activeUser",
   /** @deprecated pre–per-user migration; unscoped list moved into the active user’s key */
   GOALS_LEGACY: "goals",
+  /** @deprecated pre–per-user migration; unscoped Home list moved into the active user’s key */
+  HOME_EXERCISES_LEGACY: "home_exercises",
 };
 
 /**
@@ -136,6 +138,14 @@ export async function clearDebugDateOverride() {
  */
 function goalsKeyForUser(username) {
   return `goals__u__${encodeURIComponent(String(username))}`;
+}
+
+/**
+ * @param {string} username
+ * @returns {string}
+ */
+function homeExercisesKeyForUser(username) {
+  return `home_exercises__u__${encodeURIComponent(String(username))}`;
 }
 
 /**
@@ -731,6 +741,134 @@ export async function reorderExercisesInGoal(goalId, exercisesOrdered) {
   } catch (e) {
     console.error("reorderExercisesInGoal", e);
     return false;
+  }
+}
+
+function createStandaloneHomeExerciseId() {
+  return `home_ex_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/**
+ * @param {unknown} ex
+ * @returns {{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null } | null}
+ */
+function normalizeStandaloneExercise(ex) {
+  if (!ex || typeof ex !== "object" || Array.isArray(ex)) {
+    return null;
+  }
+  const o = /** @type {{ id?: unknown; name?: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} */ (ex);
+  const id = o.id != null ? String(o.id).trim() : "";
+  if (!id) {
+    return null;
+  }
+  const name = o.name != null ? String(o.name).trim() : "";
+  if (!name) {
+    return null;
+  }
+  const dur = o.duration != null ? String(o.duration).trim() : "";
+  return {
+    id,
+    name,
+    sets: coerceOptionalNumber(o.sets),
+    reps: coerceOptionalNumber(o.reps),
+    weight: coerceOptionalNumber(o.weight),
+    duration: dur === "" ? null : dur,
+  };
+}
+
+/**
+ * @returns {Promise<{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null }[]>}
+ */
+async function readHomeStandaloneFromStorage() {
+  const active = await getActiveUser();
+  if (active == null) {
+    return [];
+  }
+  const scopedKey = homeExercisesKeyForUser(active);
+  let raw = await AsyncStorage.getItem(scopedKey);
+  if (raw == null || raw === "") {
+    const legacy = await AsyncStorage.getItem(KEYS.HOME_EXERCISES_LEGACY);
+    if (legacy != null && legacy !== "") {
+      await AsyncStorage.setItem(scopedKey, legacy);
+      await AsyncStorage.removeItem(KEYS.HOME_EXERCISES_LEGACY);
+      raw = legacy;
+    } else {
+      return [];
+    }
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    console.error("readHomeStandaloneFromStorage JSON.parse", e);
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed.map(normalizeStandaloneExercise).filter(Boolean);
+}
+
+/**
+ * @param {{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null }[]} rows
+ */
+async function writeHomeStandaloneToStorage(rows) {
+  const active = await getActiveUser();
+  if (active == null) {
+    return;
+  }
+  await AsyncStorage.setItem(
+    homeExercisesKeyForUser(active),
+    JSON.stringify(rows),
+  );
+}
+
+/**
+ * @returns {Promise<{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null }[]>}
+ */
+export async function getHomeStandaloneExercises() {
+  try {
+    if ((await getActiveUser()) == null) {
+      return [];
+    }
+    return await readHomeStandaloneFromStorage();
+  } catch (e) {
+    console.error("getHomeStandaloneExercises", e);
+    return [];
+  }
+}
+
+/**
+ * @param {{ name: unknown; sets?: unknown; reps?: unknown; weight?: unknown; duration?: unknown }} fields
+ * @returns {Promise<{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null } | null>}
+ */
+export async function addHomeStandaloneExercise(fields) {
+  const name = String(fields.name ?? "").trim();
+  if (name.length === 0) {
+    return null;
+  }
+  try {
+    if ((await getActiveUser()) == null) {
+      return null;
+    }
+    const list = await readHomeStandaloneFromStorage();
+    const ex = {
+      id: createStandaloneHomeExerciseId(),
+      name,
+      sets: coerceOptionalNumber(fields.sets),
+      reps: coerceOptionalNumber(fields.reps),
+      weight: coerceOptionalNumber(fields.weight),
+      duration:
+        fields.duration != null && String(fields.duration).trim() !== ""
+          ? String(fields.duration).trim()
+          : null,
+    };
+    const next = [...list, ex];
+    await writeHomeStandaloneToStorage(next);
+    return ex;
+  } catch (e) {
+    console.error("addHomeStandaloneExercise", e);
+    return null;
   }
 }
 
