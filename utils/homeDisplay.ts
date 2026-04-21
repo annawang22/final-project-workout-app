@@ -1,5 +1,5 @@
 import { getActiveGoalExercisesForDate } from "./activeGoalExercises";
-import { getHomeStandaloneExercises } from "./storage";
+import { formatDateYMD, getLogbook, getHomeStandaloneExercises } from "./storage";
 
 export type HomeExerciseShape = {
   id: string;
@@ -92,6 +92,35 @@ export function normalizeExerciseForHome(ex: unknown): HomeExerciseShape | null 
   };
 }
 
+/** Goal rows completed for `dateYmd` are stored in logbook with __homeSource goal + __goalId — hide them on Home without mutating goals. */
+async function getCompletedGoalKeysForDate(dateYmd: string): Promise<Set<string>> {
+  const set = new Set<string>();
+  try {
+    const book = await getLogbook();
+    const day = book.find((d) => d.date === dateYmd);
+    if (!day || !Array.isArray(day.exercises)) {
+      return set;
+    }
+    for (const ex of day.exercises) {
+      if (!ex || typeof ex !== "object" || Array.isArray(ex)) {
+        continue;
+      }
+      const o = ex as Record<string, unknown>;
+      if (o.__homeSource !== "goal") {
+        continue;
+      }
+      const gid = String(o.__goalId ?? "").trim();
+      const eid = String(o.id ?? "").trim();
+      if (gid && eid) {
+        set.add(`${gid}:${eid}`);
+      }
+    }
+  } catch {
+    /* empty set — show goal rows rather than hiding on read error */
+  }
+  return set;
+}
+
 /**
  * Standalone Home exercises (always included) + goal-based rows that match the effective date.
  * Keys are unique per source so similar names from different sources both render.
@@ -99,9 +128,11 @@ export function normalizeExerciseForHome(ex: unknown): HomeExerciseShape | null 
 export async function getMergedHomeExerciseRows(
   effectiveDate: Date,
 ): Promise<HomeMergedRow[]> {
-  const [goalRows, standalone] = await Promise.all([
+  const dateYmd = formatDateYMD(effectiveDate);
+  const [goalRows, standalone, completedGoalKeys] = await Promise.all([
     getActiveGoalExercisesForDate(effectiveDate),
     getHomeStandaloneExercises(),
+    getCompletedGoalKeysForDate(dateYmd),
   ]);
 
   const out: HomeMergedRow[] = [];
@@ -109,6 +140,10 @@ export async function getMergedHomeExerciseRows(
   for (const row of goalRows) {
     const ex = normalizeExerciseForHome(row.exercise);
     if (!ex) {
+      continue;
+    }
+    const ck = `${row.goalId}:${ex.id}`;
+    if (completedGoalKeys.has(ck)) {
       continue;
     }
     out.push({

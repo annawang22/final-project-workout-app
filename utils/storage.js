@@ -10,7 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * - goals__u__*      — per-user goal lists (use goalsKeyForUser; legacy "goals" is migrated on read)
  * - home_exercises__u__* — per-user standalone Home exercises (legacy "home_exercises" is migrated on read)
  * - profile         — ProfileObject (name, username, image URI)
- * - logbook         — LogbookEntry[] completed exercise history
+ * - logbook__u__*   — per-user logbook (legacy "logbook" migrated on read)
  *
  * DEBUG ONLY (not user data):
  * - debug_date_override__u__* — optional YYYY-MM-DD override for getEffectiveToday() per user
@@ -25,6 +25,8 @@ const KEYS = {
   GOALS_LEGACY: "goals",
   /** @deprecated pre–per-user migration; unscoped Home list moved into the active user’s key */
   HOME_EXERCISES_LEGACY: "home_exercises",
+  /** @deprecated pre–per-user migration */
+  LOGBOOK_LEGACY: "logbook",
 };
 
 /**
@@ -146,6 +148,14 @@ function goalsKeyForUser(username) {
  */
 function homeExercisesKeyForUser(username) {
   return `home_exercises__u__${encodeURIComponent(String(username))}`;
+}
+
+/**
+ * @param {string} username
+ * @returns {string}
+ */
+function logbookKeyForUser(username) {
+  return `logbook__u__${encodeURIComponent(String(username))}`;
 }
 
 /**
@@ -869,6 +879,260 @@ export async function addHomeStandaloneExercise(fields) {
   } catch (e) {
     console.error("addHomeStandaloneExercise", e);
     return null;
+  }
+}
+
+/**
+ * @param {unknown} day
+ * @returns {{ date: string, exercises: unknown[] } | null}
+ */
+function normalizeLogbookDay(day) {
+  if (!day || typeof day !== "object" || Array.isArray(day)) {
+    return null;
+  }
+  const o = /** @type {{ date?: unknown; exercises?: unknown }} */ (day);
+  const date = o.date != null ? String(o.date).trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return null;
+  }
+  const exercises = Array.isArray(o.exercises) ? o.exercises : [];
+  return { date, exercises };
+}
+
+/**
+ * @returns {Promise<{ date: string, exercises: unknown[] }[]>}
+ */
+async function readLogbookFromStorage() {
+  const active = await getActiveUser();
+  if (active == null) {
+    return [];
+  }
+  const scopedKey = logbookKeyForUser(active);
+  let raw = await AsyncStorage.getItem(scopedKey);
+  if (raw == null || raw === "") {
+    const legacy = await AsyncStorage.getItem(KEYS.LOGBOOK_LEGACY);
+    if (legacy != null && legacy !== "") {
+      await AsyncStorage.setItem(scopedKey, legacy);
+      await AsyncStorage.removeItem(KEYS.LOGBOOK_LEGACY);
+      raw = legacy;
+    } else {
+      return [];
+    }
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    console.error("readLogbookFromStorage JSON.parse", e);
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed.map(normalizeLogbookDay).filter(Boolean);
+}
+
+/**
+ * @param {{ date: string, exercises: unknown[] }[]} book
+ */
+async function writeLogbookToStorage(book) {
+  const active = await getActiveUser();
+  if (active == null) {
+    return;
+  }
+  await AsyncStorage.setItem(
+    logbookKeyForUser(active),
+    JSON.stringify(book),
+  );
+}
+
+/**
+ * @returns {Promise<{ date: string, exercises: unknown[] }[]>}
+ */
+export async function getLogbook() {
+  try {
+    if ((await getActiveUser()) == null) {
+      return [];
+    }
+    return await readLogbookFromStorage();
+  } catch (e) {
+    console.error("getLogbook", e);
+    return [];
+  }
+}
+
+/**
+ * @param {{ date: string, exercises: unknown[] }[]} book
+ * @returns {Promise<boolean>}
+ */
+export async function saveLogbook(book) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    if (!Array.isArray(book)) {
+      return false;
+    }
+    const normalized = book.map(normalizeLogbookDay).filter(Boolean);
+    await writeLogbookToStorage(normalized);
+    return true;
+  } catch (e) {
+    console.error("saveLogbook", e);
+    return false;
+  }
+}
+
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ * @returns {boolean}
+ */
+function logbookCompletionSame(a, b) {
+  if (!a || !b || typeof a !== "object" || typeof b !== "object") {
+    return false;
+  }
+  const pa = /** @type {Record<string, unknown>} */ (a);
+  const pb = /** @type {Record<string, unknown>} */ (b);
+  const ida = String(pa.id ?? "").trim();
+  const idb = String(pb.id ?? "").trim();
+  if (ida === "" || idb === "" || ida !== idb) {
+    return false;
+  }
+  const sa = pa.__homeSource === "goal" ? "goal" : "standalone";
+  const sb = pb.__homeSource === "goal" ? "goal" : "standalone";
+  if (sa !== sb) {
+    return false;
+  }
+  if (sa === "goal") {
+    return String(pa.__goalId ?? "") === String(pb.__goalId ?? "");
+  }
+  return true;
+}
+
+/**
+ * Append one exercise snapshot to the logbook under dateYmd (YYYY-MM-DD). Idempotent per completion identity.
+ * @param {unknown} exercisePayload — includes optional __homeSource / __goalId for goal completions
+ * @param {string} dateYmd
+ * @returns {Promise<{ ok: boolean, appended: boolean }>} appended=false means duplicate / already logged (no new row)
+ */
+export async function addLogbookEntry(exercisePayload, dateYmd) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return { ok: false, appended: false };
+    }
+    const date = String(dateYmd ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return { ok: false, appended: false };
+    }
+    const book = await readLogbookFromStorage();
+    let idx = book.findIndex((d) => d.date === date);
+    if (idx < 0) {
+      book.push({ date, exercises: [] });
+      idx = book.length - 1;
+    }
+    const day = book[idx];
+    const list = Array.isArray(day.exercises) ? day.exercises : [];
+    if (list.some((ex) => logbookCompletionSame(ex, exercisePayload))) {
+      await writeLogbookToStorage(book);
+      return { ok: true, appended: false };
+    }
+    day.exercises = [...list, exercisePayload];
+    await writeLogbookToStorage(book);
+    return { ok: true, appended: true };
+  } catch (e) {
+    console.error("addLogbookEntry", e);
+    return { ok: false, appended: false };
+  }
+}
+
+/**
+ * Remove one entry from logbook day matching predicate (Phase 7 undo).
+ * @param {string} dateYmd
+ * @param {(ex: unknown) => boolean} predicate
+ * @returns {Promise<boolean>}
+ */
+export async function removeLogbookEntryWhere(dateYmd, predicate) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const date = String(dateYmd ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return false;
+    }
+    const book = await readLogbookFromStorage();
+    const di = book.findIndex((d) => d.date === date);
+    if (di < 0) {
+      return false;
+    }
+    const day = book[di];
+    const list = Array.isArray(day.exercises) ? [...day.exercises] : [];
+    const ri = list.findIndex((ex) => predicate(ex));
+    if (ri < 0) {
+      return false;
+    }
+    list.splice(ri, 1);
+    day.exercises = list;
+    if (list.length === 0) {
+      book.splice(di, 1);
+    }
+    await writeLogbookToStorage(book);
+    return true;
+  } catch (e) {
+    console.error("removeLogbookEntryWhere", e);
+    return false;
+  }
+}
+
+/**
+ * @param {string} exerciseId
+ * @returns {Promise<boolean>}
+ */
+export async function removeHomeStandaloneExerciseById(exerciseId) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const id = String(exerciseId ?? "").trim();
+    if (!id) {
+      return false;
+    }
+    const list = await readHomeStandaloneFromStorage();
+    const next = list.filter((e) => e.id !== id);
+    if (next.length === list.length) {
+      return false;
+    }
+    await writeHomeStandaloneToStorage(next);
+    return true;
+  } catch (e) {
+    console.error("removeHomeStandaloneExerciseById", e);
+    return false;
+  }
+}
+
+/**
+ * Restore a standalone Home exercise row (same id) after undo — avoids duplicate ids.
+ * @param {unknown} exercise
+ * @returns {Promise<boolean>}
+ */
+export async function restoreHomeStandaloneExercise(exercise) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const normalized = normalizeStandaloneExercise(exercise);
+    if (!normalized) {
+      return false;
+    }
+    const list = await readHomeStandaloneFromStorage();
+    if (list.some((e) => e.id === normalized.id)) {
+      return true;
+    }
+    await writeHomeStandaloneToStorage([...list, normalized]);
+    return true;
+  } catch (e) {
+    console.error("restoreHomeStandaloneExercise", e);
+    return false;
   }
 }
 

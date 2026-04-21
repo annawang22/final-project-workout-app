@@ -1,5 +1,5 @@
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
+  executeHomeCompletion,
+  isAlreadyCompletedForDate,
+  type LastCompletionUndoDebug,
+  undoLastCompletion,
+} from "../utils/homeCompletion";
+import {
   type HomeMergedRow,
   formatHomeDateHeader,
   formatHomeExerciseDetails,
@@ -22,6 +28,8 @@ import {
 } from "../utils/homeDisplay";
 import {
   addHomeStandaloneExercise,
+  formatDateYMD,
+  getActiveUser,
   getEffectiveToday,
   refreshDebugDateOverrideCache,
 } from "../utils/storage";
@@ -40,15 +48,98 @@ export default function HomeScreen() {
   const [weight, setWeight] = useState("");
   const [duration, setDuration] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  /** Phase 7 — rows actively animating to complete (grey + checkmark before persistence). */
+  const [completingKeys, setCompletingKeys] = useState<Record<string, boolean>>({});
+  /**
+   * DEBUG / TEMPORARY — surface last completion for safe testing until Logbook screen exists (Phase 8+).
+   * Not final UX; remove when Logbook supports undo/history.
+   */
+  const [lastUndo, setLastUndo] = useState<LastCompletionUndoDebug | null>(null);
+  const completingGuard = useRef(new Set<string>());
 
   const loadHome = useCallback(async () => {
     await refreshDebugDateOverrideCache();
     const eff = getEffectiveToday();
+    const activeUser = await getActiveUser();
     setDateHeader(formatHomeDateHeader(eff));
     const merged = await getMergedHomeExerciseRows(eff);
     setRows(merged);
     setLoading(false);
+    setLastUndo((prev) => {
+      if (!prev) {
+        return null;
+      }
+      return prev.sessionUser === activeUser ? prev : null;
+    });
   }, []);
+
+  const scheduleComplete = useCallback(
+    (item: HomeMergedRow) => {
+      const key = item.key;
+      if (completingGuard.current.has(key)) {
+        return;
+      }
+      completingGuard.current.add(key);
+
+      void (async () => {
+        try {
+          await refreshDebugDateOverrideCache();
+          const effCheck = getEffectiveToday();
+          const ymdCheck = formatDateYMD(effCheck);
+          if (await isAlreadyCompletedForDate(item, ymdCheck)) {
+            completingGuard.current.delete(key);
+            return;
+          }
+
+          setCompletingKeys((prev) => ({ ...prev, [key]: true }));
+
+          setTimeout(() => {
+            void (async () => {
+              try {
+                await refreshDebugDateOverrideCache();
+                const eff = getEffectiveToday();
+                const ymd = formatDateYMD(eff);
+                if (await isAlreadyCompletedForDate(item, ymd)) {
+                  return;
+                }
+                const result = await executeHomeCompletion(item, eff);
+                if (result.ok && result.undo) {
+                  setLastUndo(result.undo);
+                }
+                await loadHome();
+              } catch (e) {
+                console.error("scheduleComplete", e);
+                await loadHome();
+              } finally {
+                completingGuard.current.delete(key);
+                setCompletingKeys((prev) => {
+                  const next = { ...prev };
+                  delete next[key];
+                  return next;
+                });
+              }
+            })();
+          }, 500);
+        } catch (e) {
+          console.error("scheduleComplete precheck", e);
+          completingGuard.current.delete(key);
+        }
+      })();
+    },
+    [loadHome],
+  );
+
+  const handleUndoDebug = useCallback(async () => {
+    if (!lastUndo) {
+      return;
+    }
+    await refreshDebugDateOverrideCache();
+    const ok = await undoLastCompletion(lastUndo);
+    if (ok) {
+      setLastUndo(null);
+      await loadHome();
+    }
+  }, [lastUndo, loadHome]);
 
   useFocusEffect(
     useCallback(() => {
@@ -120,6 +211,7 @@ export default function HomeScreen() {
       ) : (
         <FlatList
           data={rows}
+          extraData={completingKeys}
           keyExtractor={(item) => item.key}
           contentContainerStyle={{
             paddingHorizontal: 16,
@@ -129,9 +221,26 @@ export default function HomeScreen() {
           renderItem={({ item }) => {
             const ex = item.exercise;
             const detail = formatHomeExerciseDetails(ex);
+            const isCompleting = !!completingKeys[item.key];
             return (
-              <View style={styles.row}>
-                <View style={styles.checkbox} accessibilityLabel="Exercise (completion in a later phase)" />
+              <View
+                style={[styles.row, isCompleting && styles.rowCompleting]}
+              >
+                <Pressable
+                  onPress={() => scheduleComplete(item)}
+                  hitSlop={8}
+                  style={styles.checkboxHit}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isCompleting }}
+                >
+                  <View
+                    style={[styles.checkbox, isCompleting && styles.checkboxDone]}
+                  >
+                    {isCompleting ? (
+                      <Text style={styles.checkboxMark}>✓</Text>
+                    ) : null}
+                  </View>
+                </Pressable>
                 <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>{ex.name}</Text>
                   {detail !== "" ? (
@@ -146,6 +255,19 @@ export default function HomeScreen() {
           }}
         />
       )}
+
+      {/* DEBUG / TEMPORARY — Phase 7 undo strip; delete when Logbook ships */}
+      {lastUndo ? (
+        <View
+          style={[styles.undoBanner, { bottom: 84 + insets.bottom }]}
+          pointerEvents="box-none"
+        >
+          <Text style={styles.undoBannerText}>Exercise completed. Undo?</Text>
+          <Pressable onPress={() => void handleUndoDebug()} hitSlop={8}>
+            <Text style={styles.undoLink}>Undo</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Pressable
         onPress={openModal}
@@ -289,6 +411,29 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 16, fontWeight: "600" },
   rowMeta: { fontSize: 14, color: "#555", marginTop: 4 },
   rowHint: { fontSize: 12, color: "#888", marginTop: 4 },
+  rowCompleting: { opacity: 0.45 },
+  checkboxHit: { paddingVertical: 4, paddingRight: 4 },
+  checkboxDone: {
+    borderColor: "#222",
+    backgroundColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxMark: { fontSize: 14, fontWeight: "700", color: "#222" },
+  undoBanner: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#2a2a2a",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  undoBannerText: { color: "#fff", fontSize: 14, flex: 1 },
+  undoLink: { color: "#8cf", fontSize: 15, fontWeight: "600" },
   fab: {
     position: "absolute",
     width: 56,

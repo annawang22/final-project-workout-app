@@ -866,4 +866,240 @@ User B logs in → should see none of User A’s Home data
 User B creates different Home data
 Switch back to User A → original Home data still intact
 
-34) 
+## RETURNED TO CHATGPT PRO
+11) this was a great prompt. extremely well done. please write my phase 7 prompt.
+12) since i haven't actually created the logbook yet because that's phase 8. i want to be able to undo my action (for example, say i checked something off, but then i want to uncheck it off) so that i can make sure there are no bugs. do you think this is necessary? if so, could you add this into my prompt and tell me where you putting this debugger action tool or how this would work? if this isn't necessary, explain to me why.
+
+## RETURNED TO CURSOR PRO (AGENT)
+34) Phase 6 is complete and verified. We are now starting Phase 7.
+Read SPEC.md and review the Phase 7 section in full before writing any code.
+Your job is to complete every task in Phase 7 and verify every item in the "Done When" checklist before stopping. Do not start Phase 8.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All completion and logbook data must be scoped per user
+No cross-user data leakage under any condition
+
+2. Use Effective App Date Everywhere
+All completion and logbook writes must use:
+getEffectiveToday()
+Do not use new Date() directly for completion date logic
+This ensures:
+debug date override works correctly
+completion is logged to the correct date
+
+3. No Data Loss (HIGHEST PRIORITY)
+Every completed exercise must be written to logbook storage
+No silent failures
+No dropped data
+If something fails, fail safely and never crash
+
+4. Temporary Debug Undo Is Required
+Because the full Logbook screen does not exist yet, you must add a temporary debug-only undo mechanism on the Home screen so completion behavior can be tested safely.
+Requirements:
+It must allow undoing the most recent completion
+It must be clearly temporary/debug-oriented in code comments
+It must not require the Logbook screen to exist yet
+It must correctly reverse completion state in storage and UI
+
+Build the following:
+
+1. Checkbox Completion Behavior
+On the Home screen:
+When a user taps the checkbox:
+Checkbox shows checked state immediately
+Exercise visually greys out
+After a short delay (~500ms):
+exercise is removed from the visible Home list
+Do not remove instantly.
+
+2. Completion Flow (Data Handling)
+When an exercise is completed:
+Step 1 — Identify Source
+Determine whether the exercise is:
+goal-based (from an active goal)
+standalone (from Home)
+Step 2 — Write to Logbook Storage
+Add the exercise to user-scoped logbook storage.
+Structure:
+{
+  date: "YYYY-MM-DD", // from getEffectiveToday()
+  exercises: [ ... ]
+}
+
+Rules:
+If an entry for that date already exists, append to it
+If not, create a new date entry
+
+3. Logbook Storage Helpers
+Extend /utils/storage.js with:
+getLogbook()
+saveLogbook(logbook)
+addLogbookEntry(exercise, date)
+All must:
+use async/await
+be wrapped in try/catch
+use user-scoped keys
+
+4. Removing from Home
+After completion:
+If standalone exercise:
+Remove it from home_exercises_<username>
+If goal-based exercise:
+Do not delete it from the goal
+It should disappear from Home for that effective app date only
+It must still exist in the goal data
+You must implement a safe way to prevent it from immediately reappearing for the same date.
+You may:
+filter against logbook entries for that date, or
+maintain a date-aware completion helper
+Explain your approach when you finish.
+
+5. Prevent Duplicate Completion Entries
+If user taps checkbox multiple times quickly:
+exercise must only be logged once
+No duplicate entries in logbook
+
+6. Temporary Debug Undo on Home (REQUIRED EXACT LOCATION)
+You must add a temporary undo control on the Home screen for debugging.
+Placement:
+Show it on the Home screen immediately after a completion
+Keep it visually simple
+It can be a small banner, inline notice, or snackbar-style row near the bottom
+It must appear without navigating away from Home
+Behavior:
+After a completion, show something like:
+"Exercise completed. Undo?"
+If Undo is tapped:
+reverse the most recent completion only
+remove that exercise from logbook storage for the effective app date
+restore it to Home as incomplete
+if it was a standalone exercise, restore it correctly to standalone Home storage
+if it was a goal-based exercise, make it visible on Home again without duplicating it in goal storage
+Rules:
+This is a temporary debug tool, not final UX
+Add a code comment marking it as temporary/debug-only
+It must not create duplicate exercises
+It must use the effective app date
+It must persist correctly if the user kills and reopens after the undo has already happened
+You do not need to preserve an undo option forever across app restart.
+You only need to ensure that the resulting state after an undo is stored correctly.
+
+7. State + UI Synchronization
+Completed exercise must:
+grey out before disappearing
+not reappear on re-render for the same date
+Home list must update immediately after removal
+Undo must restore it cleanly with no flicker or duplication
+
+8. Completion Persistence
+After kill-and-reopen:
+Completed exercises must:
+remain removed from Home for that effective app date
+appear correctly in logbook storage
+Standalone exercises must stay deleted after completion
+If completion was undone before restart, restored state must persist correctly
+
+9. Debug Date Override Behavior (MANDATORY)
+Your debug date override must fully affect completion behavior.
+That means:
+Completing an exercise on an override date:
+logs it under that override date
+Switching override date:
+should show the exercise again if it wasn’t completed on that new date
+Example:
+Override = Tuesday → complete exercise
+Switch to Wednesday → exercise should appear again
+Switch back to Tuesday → exercise should be gone
+Undo must also respect the effective app date:
+If I undo while on Tuesday override, it should reverse Tuesday’s completion
+It should not affect a different day’s state
+
+10. Empty State Behavior
+If all exercises are completed, show this exact message:
+YAY you finished all exercises for the day
+
+This must:
+appear immediately after last completion
+disappear again if Undo restores an exercise
+persist correctly after restart
+
+11. Helper Logic (IMPORTANT)
+Structure logic cleanly:
+helper to check if exercise is completed for a given date
+helper to write to logbook
+helper to undo most recent completion
+helper to filter completed exercises out of Home
+Do not place all logic directly inside the Home component.
+
+12. Edge Cases
+Handle safely:
+no existing logbook data
+completing last exercise of the day
+rapid multiple taps
+undo after last completion of the day
+switching users mid-session
+malformed exercise objects
+null storage values
+No crashes allowed.
+
+When you are done:
+Go through the Phase 7 "Done When" checklist in SPEC.md and confirm each item passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren’t specified
+How you prevented duplicate logbook entries
+How you ensured completed exercises don’t reappear
+How the temporary Home undo works
+How debug date override interacts with completion and undo
+Anything that needs my input before Phase 8
+
+Do not start Phase 8.
+
+I will run these kill-and-reopen tests:
+Completion Flow Tests
+Tap checkbox → checkmark appears → greys out → disappears after delay
+Exercise appears in logbook storage under correct effective date
+No duplicate entries on rapid taps
+
+Temporary Undo Tests
+Complete exercise → Undo appears on Home
+Tap Undo → exercise returns as incomplete
+Undo must not create duplicates
+Complete again after undo → should still work correctly
+
+Standalone Exercise Tests
+Complete standalone exercise → removed
+Undo → restored correctly
+Kill app → reopen → correct final state remains
+
+Goal-Based Exercise Tests
+Complete goal-based exercise → disappears from Home
+Undo → reappears on Home
+Kill app → reopen → correct final state remains
+Exercise must still exist inside goal data
+
+Debug Date Tests
+Override date → complete exercise
+Switch date → exercise should reappear
+Switch back → should be gone
+Undo on override date → should restore correctly for that date only
+Kill app → reopen → behavior must persist correctly
+
+Empty State Tests
+Complete all exercises → empty state appears
+Undo one → empty state disappears
+Kill app → reopen → correct final state remains
+
+Data Integrity Tests
+No crashes on empty logbook
+No duplicate entries
+No data loss under any condition
+
+Multi-User Isolation Tests
+User A completes exercises → log out
+User B logs in → should see none of User A’s logbook/completion state
+User B completes different exercises
+Switch back → User A data intact
+
+35) 
