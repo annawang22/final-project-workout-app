@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 
+import { useTabBarProfile } from "../navigation/TabBarProfileContext";
 import type { ProfileStackParamList } from "../navigation/profileStackTypes";
 import { navigationRef } from "../navigation/navigationRef";
 import {
@@ -86,6 +87,8 @@ function DebugDateOverrideSection({ onChanged }: { onChanged: () => void }) {
 }
 
 export default function ProfileScreen({ navigation }: Props) {
+  const { refreshProfileTabIcon } = useTabBarProfile();
+
   /** Display name shown in Welcome + Name row (editable via modal). */
   const [displayName, setDisplayName] = useState("Your Name");
   const [username, setUsername] = useState<string | null>(null);
@@ -110,8 +113,9 @@ export default function ProfileScreen({ navigation }: Props) {
         setUsername(active);
         setImageUri(null);
       }
+      await refreshProfileTabIcon();
     })();
-  }, []);
+  }, [refreshProfileTabIcon]);
 
   useFocusEffect(
     useCallback(() => {
@@ -177,6 +181,7 @@ export default function ProfileScreen({ navigation }: Props) {
     setSaving(false);
     if (ok) {
       setImageUri(uri);
+      await refreshProfileTabIcon();
     }
   }
 
@@ -186,6 +191,7 @@ export default function ProfileScreen({ navigation }: Props) {
     setSaving(false);
     if (ok) {
       setImageUri(null);
+      await refreshProfileTabIcon();
     }
   }
 

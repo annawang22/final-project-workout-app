@@ -1683,3 +1683,186 @@ This is the final phase. Do not start a new phase.
 47) it's the back label
 48) okay let's take a different approach. i want to move the goal button to the bottom right of the goal screen, so it's just like the home screen and goals details screen. reiterate to me what i just asked you to do, then i will prompt you to implement this.
 49) perfect. okay implement this now.
+
+## RETURNED TO CHATGPT PRO 
+17) i want to improve my UI design. these are few things i want to implement: Navigation bar icons to be different. To be specific, home is house icon. Goals is goals icon. Profile is profile picture as icon.
+Unify Home, My Goals, Profile heading across all three screens. Like font, sizing, sectioning should all look the same
+Toggle dark and light mode
+Style this like a modern fitness app – think Strava  split this into phases again as needed and order as most convenient. provide me a downloadable SPECUIDesign.md
+18) write me my first phase prompt.
+
+## RETURNED TO CURSOR PRO (AGENT)
+50) Core app phases are complete and verified. We are now starting UI Phase 1.
+
+Read SPECUIDesign.md and review the Phase UI-1 — Navigation Icons section in full before writing any code.
+
+Your job is to complete every task in UI Phase 1 and verify every item in the "Done When" checklist before stopping. Do not start UI Phase 2.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. Do Not Change App Logic
+
+This phase is UI only.
+
+Do not change:
+
+auth flow
+storage structure
+goal logic
+repeat logic
+logbook logic
+debug date logic
+navigation behavior beyond icon appearance
+
+The only allowed changes are visual/navigation-tab presentation changes needed for this phase.
+
+2. Do Not Break Existing Navigation
+
+Bottom tab navigation must continue to work exactly as it does now.
+
+That means:
+
+Home tab still goes to Home
+Goals tab still goes to Goals
+Profile tab still goes to Profile
+no screen routing changes unless required only for icon rendering
+3. Keep It Simple
+
+Do not overdesign this phase.
+
+Focus only on:
+
+correct icons
+clean alignment
+consistent sizing
+polished tab bar appearance
+
+Do not start redesigning headers, cards, spacing systems, dark mode, or screen layouts yet.
+
+Build the following:
+1. Update Bottom Tab Icons
+
+Replace the current tab bar visuals so they use:
+
+Home → house icon
+Goals → goal/target icon
+Profile → profile image as icon if available, otherwise a clean default avatar icon
+
+Use a single consistent icon system for Home and Goals, such as Expo vector icons.
+
+2. Profile Tab Icon Behavior
+
+The Profile tab icon must behave as follows:
+
+If the current user has a saved profile image:
+show that image as the tab icon
+If the current user has no profile image:
+show a default avatar/profile placeholder icon
+
+Requirements:
+
+Must be user-specific
+Must not show another user’s image
+Must update correctly when switching accounts
+Must persist after kill-and-reopen
+3. Active vs Inactive Tab States
+
+Style the tab bar so active and inactive tabs are visually distinct.
+
+Requirements:
+
+active tab should be clearly highlighted
+inactive tabs should still be readable
+keep the design clean and modern
+do not use extreme colors or clutter
+
+You may make reasonable styling decisions here, but keep them simple and consistent.
+
+4. Tab Bar Layout Polish
+
+Make sure the tab bar feels polished.
+
+Requirements:
+
+icons aligned cleanly
+no awkward resizing or clipping
+profile image icon should fit naturally in the tab bar
+tab bar should feel balanced across all three tabs
+
+Do not redesign the whole screen — just make the tab bar look intentional and modern.
+
+5. Profile Image Icon Sizing Rules
+
+If using the user’s profile image in the Profile tab:
+
+crop or contain it cleanly
+keep it circular if possible
+ensure it matches the visual scale of the other icons
+do not let it distort or overflow
+
+Fallback avatar should use a visually similar size.
+
+6. User Isolation Requirement
+
+Because your app supports multiple users, this must be handled correctly:
+
+User A’s profile icon must never appear for User B
+When logging out and switching users, the tab bar must show the correct current user’s profile image or fallback icon
+No cached cross-user visual leakage allowed
+7. Persistence Requirements
+
+After kill-and-reopen:
+
+tab icons still render correctly
+profile tab icon still shows the correct current user image if one exists
+fallback icon still works if no image exists
+no crashes if profile data is null or missing
+8. Edge Cases
+
+Handle safely:
+
+no profile data yet
+profile exists but profileImage is null
+broken/missing image URI
+switching users
+logging out to Login and logging back in
+empty AsyncStorage states
+
+No crashes allowed.
+
+When you are done:
+
+Go through the UI Phase 1 "Done When" checklist in SPECUIDesign.md item by item and confirm each one passes.
+
+Then stop and tell me:
+
+What you built
+Any decisions you made that weren’t specified
+How the Profile tab icon works when a profile image exists vs does not exist
+Anything that needs my input before UI Phase 2
+
+Do not start UI Phase 2.
+
+I will run these tests:
+Navigation Icon Tests
+Home tab shows a house icon
+Goals tab shows a goal/target icon
+Profile tab shows avatar fallback if no image exists
+Profile tab shows user image if profile image exists
+Persistence Tests
+Set profile image
+Kill app
+Reopen
+Profile tab should still show correct image
+Multi-User Isolation Tests
+User A sets profile image
+Log out
+User B logs in without image
+User B should see fallback avatar, not User A’s image
+Switch back to User A
+User A’s correct image should appear again
+Stability Tests
+No crashes if profile is null
+No crashes if image URI is missing or invalid
+Navigation still works exactly as before
+
+19) 

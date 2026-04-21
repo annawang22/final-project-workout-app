@@ -1,7 +1,7 @@
 import type { RouteProp } from "@react-navigation/native";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -118,9 +118,12 @@ export default function GoalDetailScreen() {
     }, [reload]),
   );
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
     navigation.setOptions({ title: goalTitle || "Goal" });
-  }, [goalTitle, navigation]);
+  }, [ready, goalTitle, navigation]);
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
