@@ -14,11 +14,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-// This undo mechanism was used to test completion behavior before Logbook UI existed.
-// It is intentionally commented out and can be referenced if needed for debugging.
-// (See also commented state, handlers, JSX, and styles in this file.)
-// import { type LastCompletionUndoDebug, undoLastCompletion } from "../utils/homeCompletion";
 import {
   executeHomeCompletion,
   isAlreadyCompletedForDate,
@@ -50,10 +45,8 @@ export default function HomeScreen() {
   const [weight, setWeight] = useState("");
   const [duration, setDuration] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  /** Phase 7 — rows actively animating to complete (grey + checkmark before persistence). */
+  /** Rows actively animating to complete (grey + checkmark before persistence). */
   const [completingKeys, setCompletingKeys] = useState<Record<string, boolean>>({});
-  // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-  // const [lastUndo, setLastUndo] = useState<LastCompletionUndoDebug | null>(null);
   const completingGuard = useRef(new Set<string>());
 
   const loadHome = useCallback(async () => {
@@ -63,13 +56,6 @@ export default function HomeScreen() {
     const merged = await getMergedHomeExerciseRows(eff);
     setRows(merged);
     setLoading(false);
-    // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-    // setLastUndo((prev) => {
-    //   if (!prev) {
-    //     return null;
-    //   }
-    //   return prev.sessionUser === activeUser ? prev : null;
-    // });
   }, []);
 
   const scheduleComplete = useCallback(
@@ -102,8 +88,6 @@ export default function HomeScreen() {
                   return;
                 }
                 await executeHomeCompletion(item, eff);
-                // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-                // if (result.ok && result.undo) setLastUndo(result.undo);
                 await loadHome();
               } catch (e) {
                 console.error("scheduleComplete", e);
@@ -126,19 +110,6 @@ export default function HomeScreen() {
     },
     [loadHome],
   );
-
-  // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-  // const handleUndoDebug = useCallback(async () => {
-  //   if (!lastUndo) {
-  //     return;
-  //   }
-  //   await refreshDebugDateOverrideCache();
-  //   const ok = await undoLastCompletion(lastUndo);
-  //   if (ok) {
-  //     setLastUndo(null);
-  //     await loadHome();
-  //   }
-  // }, [lastUndo, loadHome]);
 
   useFocusEffect(
     useCallback(() => {
@@ -254,20 +225,6 @@ export default function HomeScreen() {
           }}
         />
       )}
-
-      {/* PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-      {lastUndo ? (
-        <View
-          style={[styles.undoBanner, { bottom: 84 + insets.bottom }]}
-          pointerEvents="box-none"
-        >
-          <Text style={styles.undoBannerText}>Exercise completed. Undo?</Text>
-          <Pressable onPress={() => void handleUndoDebug()} hitSlop={8}>
-            <Text style={styles.undoLink}>Undo</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      */}
 
       <Pressable
         onPress={openModal}
@@ -420,22 +377,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxMark: { fontSize: 14, fontWeight: "700", color: "#222" },
-  /* PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
-  undoBanner: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#2a2a2a",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-  undoBannerText: { color: "#fff", fontSize: 14, flex: 1 },
-  undoLink: { color: "#8cf", fontSize: 15, fontWeight: "600" },
-  */
   fab: {
     position: "absolute",
     width: 56,

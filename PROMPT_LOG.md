@@ -1294,3 +1294,205 @@ Switch back → User A data intact
 36) very good job. i just want to make some slight modifications with the UI design on the profile page. currently, the top says "Welcome username" but i want it to say "Welcome name". To be more specific, i want it to be the name that the user can edit. furthering this, i don't want the save name button to be out in the open and i don't want to just be able to click to edit the name. i want there to be name shown like how the username is shown and then an edit button. when the user clicks the edit button, it leads them to a pop-up that allows them to change their name, hence save or cancel. repeat back to me what i want you to implement. don't implement anything until i agree with your interpretation and prompt you to do so.
 37) yes that is exactly correct. please tell me your approach on how to implement this. once i give you confirmation after, i will ask you to actually do implementation.
 38) sounds good. please proceed with implementation.
+
+## RETURNED TO CURSOR PRO (ASK)
+2) do you think that it is an issue that when im looking at the logbook and playing around with the date overide debugger the logbook currently logs all the exercises that were ever checked off? to  be more specific, if i have exercises checked off from 2026-04-26 and 2026-05-06 but current app date, is 2026-04-21, i still see the things that were checked off 2026-05-06 even though that day hasn't passed yet. if this is an issue, reiterate to me why it is an issue. if not, explain to me why.
+
+## RETURNED TO CHATGPT PRO
+14) fantastic prompt. please write my phase 9 prompt.
+
+## RETURNED TO CURSOR PRO (AGENT)
+39) Phase 8 is complete and verified. We are now starting Phase 9.
+Read SPEC.md and review the Phase 9 section in full before writing any code.
+Your job is to complete every task in Phase 9 and verify every item in the "Done When" checklist before stopping. Do not start Phase 10.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All undo behavior, logbook data, and restored Home state must remain fully scoped per user
+No user can ever see or restore another user’s data
+
+2. Use Effective App Date Consistently
+The undo flow must remain compatible with the existing debug date override system
+Any date-sensitive logic must continue to use:
+getEffectiveToday()
+Do not introduce new new Date()-based logic that conflicts with the effective app date model
+
+3. Replace Phase 7 Temporary Debug Undo with Real Logbook Undo
+In Phase 8, the temporary Phase 7 Home undo was commented out and disabled.
+In this phase:
+Remove the old Phase 7 debug code that was commented out
+do not re-enable it
+implement the real undo flow from the Logbook screen only
+Undo must now happen through Logbook interaction, not through a Home debug banner.
+
+Build the following:
+
+1. Enable Undo from Logbook
+In the Logbook screen:
+Tapping a completed exercise entry must:
+remove that exercise from the logbook for that date
+restore that exercise to the Home screen as incomplete
+This is now the official undo flow.
+
+2. Undo Behavior Rules
+When a user taps a checked exercise in Logbook:
+Step 1 — Remove from Logbook
+remove the specific exercise from that specific date group
+do not remove unrelated entries
+do not affect the same exercise on other dates
+Step 2 — Restore to Home
+re-add the exercise to today’s Home list as incomplete
+Per the spec, restored exercise must persist as incomplete in user-scoped "home_exercises" storage after app restart.
+⚠️ This means the restored item must become visible on Home again and remain there after kill-and-reopen.
+
+3. Restore Strategy
+Implement undo so it is safe and deterministic.
+Requirements:
+A restored exercise must not become duplicated
+A restored exercise must be restored only once per undo action
+If the same exercise already exists on Home as incomplete, do not add another duplicate
+Explain your duplication-prevention approach when you finish
+Since the spec says the restored exercise must persist in "home_exercises" after restart, restore undone exercises into the user-scoped standalone Home exercises storage.
+Example concept:
+if a logbook item is undone, it becomes a standalone incomplete Home item
+This avoids mutating goal definitions and keeps the undo flow simple and persistent.
+
+4. Logbook Cleanup
+After removing an exercise from a date group:
+if that date group becomes empty, do not render that date group anymore
+remove empty groups from storage if appropriate
+Logbook should continue showing only non-empty date groups
+
+5. Logbook Ordering
+Maintain:
+most recent date groups first
+exercises listed cleanly within each group
+Undoing an item must update the UI immediately without requiring app restart.
+
+6. Home Behavior After Undo
+After undoing from Logbook:
+exercise must reappear on Home as incomplete
+checkbox must be unchecked
+it must behave like a normal incomplete Home exercise
+it must persist after kill-and-reopen
+If the Home screen is currently open when undo happens later, the restored state must be reflected correctly when returning to Home.
+
+7. No Duplicate Logbook / Undo Loops
+You must prevent:
+duplicate restored exercises on Home
+duplicate logbook entries after repeated complete/undo cycles
+stale checked state surviving after undo
+broken loops where one tap causes multiple restores
+A complete → undo → complete again cycle must remain stable.
+
+8. Storage Helpers
+Extend /utils/storage.js as needed.
+You may add helpers such as:
+remove a specific logbook exercise from a date group
+restore an undone exercise to "home_exercises_<username>"
+detect whether a restored exercise already exists in Home storage
+All storage access must:
+use async/await
+be wrapped in try/catch
+remain user-scoped
+No screen should call AsyncStorage directly.
+
+9. Logbook Tap Behavior
+Update the Logbook screen so that:
+tapping a checked exercise triggers undo
+the UI makes it obvious this is interactive
+but keep the design simple
+You may use:
+pressable rows
+subtle helper text
+or a small note at the top like:
+"Tap a completed exercise to restore it to Home"
+Do not overdesign this.
+
+10. Persistence Requirements
+After kill-and-reopen:
+undone exercises must remain restored on Home
+removed logbook entries must stay removed
+empty logbook date groups must stay gone
+user-specific data separation must still hold
+
+11. Debug Date Override Compatibility
+Undo must remain compatible with your effective app date system.
+Requirements:
+undoing a past completion from Logbook should restore the exercise to current Home storage as incomplete
+it should not crash if a debug override date is active
+it should not corrupt date grouping in Logbook
+restored Home visibility should still follow the current Home logic cleanly
+Do not reintroduce the old temporary Home undo system.
+
+12. Edge Cases
+Handle safely:
+empty logbook
+one-item date group
+undoing the last item in the logbook
+repeated complete/undo cycles
+trying to undo when restored copy already exists on Home
+malformed stored items
+null storage values
+switching users with different logbook data
+No crashes allowed.
+
+When you are done:
+Go through the Phase 9 "Done When" checklist in SPEC.md item by item and confirm each one passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren’t specified
+How you implemented undo from Logbook
+How you prevented duplicate restored exercises
+How you handled empty logbook date groups
+Confirmation that the old Phase 7 debug undo remains disabled
+Anything that needs my input before Phase 10
+
+Do not start Phase 10.
+
+I will run these kill-and-reopen tests:
+Logbook Undo Tests
+Open Logbook from Profile
+Tap a completed exercise
+It should be removed from Logbook immediately
+It should reappear on Home as incomplete
+
+Persistence Tests
+Undo an exercise
+Kill app
+Reopen app
+Exercise should still be on Home as incomplete
+It should remain removed from Logbook
+
+Empty Group Tests
+Undo the only exercise in a date group
+That date group should disappear
+Kill app → reopen → it should stay gone
+
+Repeat Cycle Tests
+Complete an exercise
+Undo it from Logbook
+Complete it again
+Repeat this cycle multiple times
+No duplicate entries should appear in Logbook or Home
+
+Duplicate Prevention Tests
+Undo the same item once
+Ensure Home gets only one restored copy
+If a matching incomplete Home version already exists, do not duplicate it
+
+Debug Date Compatibility Tests
+Use a debug override date
+Complete exercise
+Undo from Logbook
+App should not crash
+Home and Logbook should remain consistent
+
+🔐 Multi-User Isolation Tests
+User A completes exercises and uses undo
+User B logs in
+User B should see none of User A’s logbook or restored Home state
+Switch back to User A
+User A’s data should still be intact
+
+40) 

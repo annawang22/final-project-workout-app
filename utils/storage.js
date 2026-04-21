@@ -1280,6 +1280,85 @@ export async function restoreHomeStandaloneExercise(exercise) {
   }
 }
 
+/**
+ * Build a standalone row from a logbook snapshot (drops Phase 7 meta fields).
+ * @param {unknown} ex
+ * @returns {{ id: string, name: string, sets: number | null, reps: number | null, weight: number | null, duration: string | null } | null}
+ */
+function logbookEntryToStandaloneRestoreShape(ex) {
+  if (!ex || typeof ex !== "object" || Array.isArray(ex)) {
+    return null;
+  }
+  const o = /** @type {Record<string, unknown>} */ (ex);
+  return normalizeStandaloneExercise({
+    id: o.id,
+    name: o.name,
+    sets: o.sets,
+    reps: o.reps,
+    weight: o.weight,
+    duration: o.duration,
+  });
+}
+
+/**
+ * Phase 9 — Logbook undo: remove one completion from a date, then restore to Home when appropriate.
+ * Standalone-sourced entries are re-appended to home_exercises (deduped by id).
+ * Goal-sourced entries are only removed from the logbook so the goal row shows again (no duplicate with standalone).
+ * @param {string} dateYmd
+ * @param {unknown} exerciseEntry — same shape as stored in logbook (may include __homeSource / __goalId)
+ * @returns {Promise<boolean>}
+ */
+export async function undoLogbookExerciseToHome(dateYmd, exerciseEntry) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const date = String(dateYmd ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return false;
+    }
+    if (!exerciseEntry || typeof exerciseEntry !== "object" || Array.isArray(exerciseEntry)) {
+      return false;
+    }
+    const entry = /** @type {Record<string, unknown>} */ (exerciseEntry);
+    const rollbackPayload = { ...entry };
+
+    const removed = await removeLogbookEntryWhere(date, (ex) =>
+      logbookCompletionSame(ex, entry),
+    );
+    if (!removed) {
+      return false;
+    }
+
+    const source = entry.__homeSource === "goal" ? "goal" : "standalone";
+    if (source === "goal") {
+      return true;
+    }
+
+    const shape = logbookEntryToStandaloneRestoreShape(entry);
+    if (!shape) {
+      const re = await addLogbookEntry(rollbackPayload, date);
+      if (!re.ok) {
+        console.error("undoLogbookExerciseToHome rollback logbook failed");
+      }
+      return false;
+    }
+
+    const restored = await restoreHomeStandaloneExercise(shape);
+    if (!restored) {
+      const re = await addLogbookEntry(rollbackPayload, date);
+      if (!re.ok) {
+        console.error("undoLogbookExerciseToHome rollback logbook failed");
+      }
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("undoLogbookExerciseToHome", e);
+    return false;
+  }
+}
+
 /** Serialize all reads/writes of the accounts list (merge + persist in order). */
 let usersStorageChain = Promise.resolve();
 

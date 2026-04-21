@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   SectionList,
   StyleSheet,
   Text,
@@ -17,7 +18,7 @@ import {
   normalizeExerciseForHome,
   type HomeExerciseShape,
 } from "../utils/homeDisplay";
-import { getLogbook } from "../utils/storage";
+import { getLogbook, undoLogbookExerciseToHome } from "../utils/storage";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Logbook">;
 
@@ -43,12 +44,24 @@ function exerciseRowShape(ex: unknown): HomeExerciseShape | null {
   return normalizeExerciseForHome(ex);
 }
 
+function rowUndoKey(dateKey: string, item: unknown): string {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    return `${dateKey}:bad`;
+  }
+  const o = item as Record<string, unknown>;
+  const id = String(o.id ?? "").trim();
+  const g =
+    o.__homeSource === "goal" ? String(o.__goalId ?? "").trim() : "standalone";
+  return `${dateKey}|${g}|${id}`;
+}
+
 export default function LogbookScreen({}: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState<
     { title: string; dateKey: string; data: unknown[]; key: string }[]
   >([]);
+  const undoingKeys = useRef(new Set<string>());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +101,24 @@ export default function LogbookScreen({}: Props) {
     }, [load]),
   );
 
+  async function handleUndoRow(dateKey: string, item: unknown) {
+    const ukey = rowUndoKey(dateKey, item);
+    if (undoingKeys.current.has(ukey)) {
+      return;
+    }
+    undoingKeys.current.add(ukey);
+    try {
+      const ok = await undoLogbookExerciseToHome(dateKey, item);
+      if (ok) {
+        await load();
+      }
+    } catch (e) {
+      console.error("LogbookScreen undo", e);
+    } finally {
+      undoingKeys.current.delete(ukey);
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -107,6 +138,11 @@ export default function LogbookScreen({}: Props) {
   return (
     <SectionList
       sections={sections}
+      ListHeaderComponent={
+        <Text style={styles.hint}>
+          Tap a completed exercise to restore it to Home.
+        </Text>
+      }
       keyExtractor={(item, index) => {
         const sh = exerciseRowShape(item);
         const id =
@@ -124,7 +160,7 @@ export default function LogbookScreen({}: Props) {
           <Text style={styles.sectionYmd}>{section.dateKey}</Text>
         </View>
       )}
-      renderItem={({ item }) => {
+      renderItem={({ item, section }) => {
         const shaped = exerciseRowShape(item);
         const name =
           shaped?.name ??
@@ -135,7 +171,12 @@ export default function LogbookScreen({}: Props) {
             : "Exercise");
         const detail = shaped ? formatHomeExerciseDetails(shaped) : "";
         return (
-          <View style={styles.row}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => void handleUndoRow(section.dateKey, item)}
+            accessibilityRole="button"
+            accessibilityLabel={`Restore ${name} to Home`}
+          >
             <View style={styles.checkboxDone}>
               <Text style={styles.checkboxMark}>✓</Text>
             </View>
@@ -145,7 +186,7 @@ export default function LogbookScreen({}: Props) {
                 <Text style={styles.rowMeta}>{detail}</Text>
               ) : null}
             </View>
-          </View>
+          </Pressable>
         );
       }}
       contentContainerStyle={{
@@ -174,6 +215,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#555",
   },
+  hint: {
+    fontSize: 13,
+    color: "#666",
+    marginBottom: 12,
+    lineHeight: 18,
+  },
   sectionHeader: {
     paddingTop: 16,
     paddingBottom: 8,
@@ -199,6 +246,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
     opacity: 0.65,
   },
+  rowPressed: { opacity: 0.9 },
   checkboxDone: {
     width: 24,
     height: 24,

@@ -1,29 +1,17 @@
 /**
- * Phase 7 — Home completion + logbook write + temporary undo support.
- * All dates use getEffectiveToday() / formatDateYMD from storage (debug override aware).
+ * Home completion + logbook write (Phase 7+).
+ * All completion dates use getEffectiveToday() / formatDateYMD from storage (debug override aware).
+ * Undo is Phase 9 — Logbook only (see undoLogbookExerciseToHome in storage).
  */
 
-import type { HomeExerciseShape, HomeMergedRow } from "./homeDisplay";
+import type { HomeMergedRow } from "./homeDisplay";
 import {
   addLogbookEntry,
   formatDateYMD,
-  getActiveUser,
   getLogbook,
   removeHomeStandaloneExerciseById,
   removeLogbookEntryWhere,
-  restoreHomeStandaloneExercise,
 } from "./storage";
-
-/** DEBUG / TEMPORARY — payload for undoing the last completion from Home until Logbook UI exists (Phase 8+). */
-export type LastCompletionUndoDebug = {
-  dateYmd: string;
-  source: "goal" | "standalone";
-  goalId?: string;
-  exerciseId: string;
-  standaloneSnapshot?: HomeExerciseShape;
-  /** Active session username when completion ran — invalidates undo after account switch */
-  sessionUser: string | null;
-};
 
 export function buildLogbookPayloadFromRow(
   row: HomeMergedRow,
@@ -87,7 +75,7 @@ export async function isAlreadyCompletedForDate(
   }
 }
 
-/** Public alias for Phase 7 checklist — same as isAlreadyCompletedForDate */
+/** Public alias — same as isAlreadyCompletedForDate */
 export async function isExerciseCompletedForDate(
   row: HomeMergedRow,
   dateYmd: string,
@@ -102,7 +90,7 @@ export async function isExerciseCompletedForDate(
 export async function executeHomeCompletion(
   row: HomeMergedRow,
   effectiveDate: Date,
-): Promise<{ ok: boolean; undo?: LastCompletionUndoDebug }> {
+): Promise<{ ok: boolean }> {
   const dateYmd = formatDateYMD(effectiveDate);
 
   if (await isAlreadyCompletedForDate(row, dateYmd)) {
@@ -118,17 +106,6 @@ export async function executeHomeCompletion(
     return { ok: false };
   }
 
-  const sessionUser = await getActiveUser();
-  const undo: LastCompletionUndoDebug = {
-    dateYmd,
-    source: row.source,
-    goalId: row.source === "goal" ? row.goalId : undefined,
-    exerciseId: row.exercise.id,
-    standaloneSnapshot:
-      row.source === "standalone" ? { ...row.exercise } : undefined,
-    sessionUser,
-  };
-
   if (row.source === "standalone") {
     const removed = await removeHomeStandaloneExerciseById(row.exercise.id);
     if (!removed) {
@@ -139,40 +116,5 @@ export async function executeHomeCompletion(
     }
   }
 
-  return { ok: true, undo };
-}
-
-function undoProbePayload(rec: LastCompletionUndoDebug): Record<string, unknown> {
-  if (rec.source === "goal") {
-    return {
-      id: rec.exerciseId,
-      __homeSource: "goal",
-      __goalId: rec.goalId ?? "",
-    };
-  }
-  return {
-    id: rec.exerciseId,
-    __homeSource: "standalone",
-  };
-}
-
-/** Reverses the last completion recorded in undo payload for the effective date only. */
-export async function undoLastCompletion(
-  rec: LastCompletionUndoDebug,
-): Promise<boolean> {
-  try {
-    const probe = undoProbePayload(rec);
-    const removed = await removeLogbookEntryWhere(rec.dateYmd, (ex) =>
-      completionIdentityMatch(ex, probe),
-    );
-    if (!removed) {
-      return false;
-    }
-    if (rec.source === "standalone" && rec.standaloneSnapshot) {
-      await restoreHomeStandaloneExercise(rec.standaloneSnapshot);
-    }
-    return true;
-  } catch {
-    return false;
-  }
+  return { ok: true };
 }
