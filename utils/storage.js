@@ -34,6 +34,7 @@ const KEYS = {
 /**
  * DEBUG ONLY — AsyncStorage key for fake “today” while testing repeat scheduling
  * without changing the device clock. Scoped per username like goals.
+ * Profile gates the override editor UI (SHOW_DEBUG_TOOLS); a stored value still affects getEffectiveToday().
  * @param {string} username
  */
 function debugDateOverrideKeyForUser(username) {

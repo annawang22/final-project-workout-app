@@ -1495,4 +1495,179 @@ User B should see none of User A’s logbook or restored Home state
 Switch back to User A
 User A’s data should still be intact
 
-40) 
+## RETURNED TO CHATGPT PRO
+15) wonderful job with this prompt. i have a question though as we move into the phase 10. for normal users, they should not be able to change the date. as the developer, i am using it just to test utilization. therefore, do you think it's better to have a developer account in which i can shift the date or should i just it commented out instead?
+16) you have done a great job with these prompts. please write my final phase 10 prompt. keep in mind what we just discussed about: hide the UI for the date change debugger. make it easy for me to turn it back on if i want to again. 
+
+## RETURNED TO CURSOR PRO (AGENT)
+40) Phase 9 is complete and verified. We are now starting Phase 10.
+Read SPEC.md and review the Phase 10 section in full before writing any code.
+Your job is to ensure the entire app works end-to-end, fix any remaining issues, and prepare the app for a production-ready state.
+Do not add new features. Do not change core behavior unless fixing bugs.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All data must remain strictly scoped per user:
+goals
+exercises
+home_exercises
+logbook
+profile
+Switching users must never leak data
+
+2. No New Features
+Only:
+bug fixes
+cleanup
+consistency improvements
+Do NOT introduce new UI, flows, or abstractions
+
+3. Debug Date Override — Production Handling (MANDATORY)
+You previously implemented a debug date override system.
+Now you must transition it to production-safe behavior.
+Requirements:
+A. Keep ALL logic
+getEffectiveToday() must remain in place
+override date logic must still work internally
+do NOT remove or rewrite it
+
+B. Hide the Debug UI from Users
+On the Profile screen:
+Remove or conditionally hide the debug date section
+Users must NOT see:
+override date display
+set override button
+clear override button
+
+C. Make It Easy to Re-enable (VERY IMPORTANT)
+You must implement ONE of the following clean patterns:
+Option 1 (Preferred — cleanest):
+const SHOW_DEBUG_TOOLS = false;
+
+Then wrap debug UI:
+SHOW_DEBUG_TOOLS && <DebugDateSection />
+
+
+Option 2:
+Use React Native dev flag:
+__DEV__ && <DebugDateSection />
+
+
+D. Add Clear Code Comment
+Above the debug UI section:
+// DEBUG DATE OVERRIDE TOOL
+// Hidden for production. Set SHOW_DEBUG_TOOLS = true to re-enable.
+// Used for testing repeat logic without changing device date.
+
+
+E. Behavior Requirement
+If override date is still stored:
+app should still respect it internally
+But UI to change it must be hidden
+
+🔁 Full Regression Testing (MANDATORY)
+You must verify all critical user flows work end-to-end.
+
+1. Fresh Install Flow
+No stored user → forced into Signup
+Signup → navigate to Home
+No crashes
+
+2. Goals + Exercises Flow
+Create goal
+Add exercises
+Edit + delete work
+Data persists after kill-and-reopen
+
+3. Goal Activation Flow
+Swipe to activate goal
+Exercises appear on Home
+Deactivate → removed correctly
+No duplication or deletion bugs
+
+4. Repeat Logic Flow
+Using debug override (internally):
+Weekly repeat shows only on correct day
+Start/end dates respected
+Switching effective date updates Home correctly
+No crashes with malformed repeat data
+
+5. Home Screen Flow
+Date renders correctly
+Exercises render correctly
+Standalone + goal-based merge works
+Empty state works:
+YAY you finished all exercises for the day
+
+
+
+6. Completion Flow
+Checkbox:
+check → grey → disappears after delay
+Written to logbook correctly
+No duplicate entries
+No reappearance on same date
+
+7. Undo Flow (Logbook)
+Tap logbook item → restored to Home
+Removed from logbook
+No duplicates created
+Complete → undo → repeat cycles stable
+
+8. Profile Flow
+Name editable + persists
+Username displayed
+Profile image persists
+No crashes with missing data
+
+9. Logbook Flow
+Grouped by date
+Most recent first
+Empty groups removed
+Persistence after restart
+
+10. Logout/Login Cycle
+Logout → Login screen
+Login → restore all data
+Nothing deleted incorrectly
+
+11. Kill-and-Reopen Stability
+Test from:
+Home
+Goals
+Goal Detail
+Profile
+Logbook
+App must:
+not crash
+restore correct state
+reflect correct data
+
+12. Edge Case Stability
+Verify no crashes when:
+AsyncStorage is empty
+goals = []
+exercises = []
+logbook = null
+profile = null
+switching users rapidly
+
+🧹 Cleanup Requirements
+Remove console.logs used for debugging
+Ensure all AsyncStorage calls go through /utils/storage.js
+Ensure no unused state variables remain
+Ensure no dead UI components remain
+Keep code readable and consistent
+
+When you are done:
+Go through the Phase 10 "Done When" checklist in SPEC.md and confirm each item passes.
+Then stop and tell me:
+What you verified
+Any bugs you found and fixed
+How you handled the debug date override for production
+Any remaining risks or edge cases
+Whether you consider the app stable
+
+This is the final phase. Do not start a new phase.
+
+41) 

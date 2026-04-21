@@ -32,14 +32,60 @@ import {
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 
-/**
- * DEBUG ONLY — this block exists so you can test repeat scheduling (Phase 4+)
- * against a fixed calendar day without changing the device date.
- * Remove before production if desired.
- */
-export default function ProfileScreen({ navigation }: Props) {
+// DEBUG DATE OVERRIDE TOOL
+// Hidden for production. Set SHOW_DEBUG_TOOLS = true to re-enable.
+// Used for testing repeat logic without changing device date.
+const SHOW_DEBUG_TOOLS = false;
+
+function DebugDateOverrideSection({ onChanged }: { onChanged: () => void }) {
   const [overrideInput, setOverrideInput] = useState("");
-  const [, bump] = useState(0);
+
+  async function handleSetOverride() {
+    const v = overrideInput.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      return;
+    }
+    await setDebugDateOverride(v);
+    setOverrideInput("");
+    onChanged();
+  }
+
+  async function handleClearOverride() {
+    await clearDebugDateOverride();
+    onChanged();
+  }
+
+  const effective = formatDateYMD(getEffectiveToday());
+  const cached = getDebugDateOverrideCached();
+
+  return (
+    <View style={styles.debugSection}>
+      <Text style={styles.debugHeading}>DEBUG (INTERNAL)</Text>
+      <Text style={styles.debugLine}>Current App Date: {effective}</Text>
+      <Text style={styles.debugSub}>
+        Override stored: {cached ?? "(none — using real calendar)"}
+      </Text>
+      <TextInput
+        style={styles.input}
+        value={overrideInput}
+        onChangeText={setOverrideInput}
+        placeholder="YYYY-MM-DD"
+        placeholderTextColor="#999"
+      />
+      <Pressable style={styles.debugBtn} onPress={() => void handleSetOverride()}>
+        <Text style={styles.debugBtnText}>Set override date</Text>
+      </Pressable>
+      <Pressable
+        style={styles.debugBtnSecondary}
+        onPress={() => void handleClearOverride()}
+      >
+        <Text style={styles.debugBtnSecondaryText}>Clear override</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export default function ProfileScreen({ navigation }: Props) {
   /** Display name shown in Welcome + Name row (editable via modal). */
   const [displayName, setDisplayName] = useState("Your Name");
   const [username, setUsername] = useState<string | null>(null);
@@ -64,7 +110,6 @@ export default function ProfileScreen({ navigation }: Props) {
         setUsername(active);
         setImageUri(null);
       }
-      bump((n) => n + 1);
     })();
   }, []);
 
@@ -144,24 +189,7 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   }
 
-  async function handleSetOverride() {
-    const v = overrideInput.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      return;
-    }
-    await setDebugDateOverride(v);
-    setOverrideInput("");
-    load();
-  }
-
-  async function handleClearOverride() {
-    await clearDebugDateOverride();
-    load();
-  }
-
   const usernameLine = username ?? "(signed in)";
-  const effective = formatDateYMD(getEffectiveToday());
-  const cached = getDebugDateOverrideCached();
 
   return (
     <>
@@ -219,33 +247,9 @@ export default function ProfileScreen({ navigation }: Props) {
           <Text style={styles.logoutLabel}>Log out</Text>
         </Pressable>
 
-        {/* DEBUG ONLY: lets QA set a fake “today” for repeat rules without changing OS date. */}
-        <View style={styles.debugSection}>
-          <Text style={styles.debugHeading}>DEBUG (TEMPORARY)</Text>
-          <Text style={styles.debugLine}>Current App Date: {effective}</Text>
-          <Text style={styles.debugSub}>
-            Override stored: {cached ?? "(none — using real calendar)"}
-          </Text>
-          <TextInput
-            style={styles.input}
-            value={overrideInput}
-            onChangeText={setOverrideInput}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#999"
-          />
-          <Pressable
-            style={styles.debugBtn}
-            onPress={() => void handleSetOverride()}
-          >
-            <Text style={styles.debugBtnText}>Set override date</Text>
-          </Pressable>
-          <Pressable
-            style={styles.debugBtnSecondary}
-            onPress={() => void handleClearOverride()}
-          >
-            <Text style={styles.debugBtnSecondaryText}>Clear override</Text>
-          </Pressable>
-        </View>
+        {SHOW_DEBUG_TOOLS ? (
+          <DebugDateOverrideSection onChanged={load} />
+        ) : null}
       </ScrollView>
 
       <Modal
