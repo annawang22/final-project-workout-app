@@ -16,9 +16,9 @@ import {
 } from "react-native";
 
 import AppHeader from "../components/AppHeader";
-import { useTabBarProfile } from "../navigation/TabBarProfileContext";
 import type { ProfileStackParamList } from "../navigation/profileStackTypes";
 import { navigationRef } from "../navigation/navigationRef";
+import { useTabBarProfile } from "../navigation/TabBarProfileContext";
 import {
   clearDebugDateOverride,
   formatDateYMD,
@@ -31,6 +31,7 @@ import {
   saveProfile,
   setDebugDateOverride,
 } from "../utils/storage";
+import { COLORS, SPACING } from "../utils/theme";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 
@@ -320,14 +321,15 @@ export default function ProfileScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screenRoot: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
   },
   scrollFlex: {
     flex: 1,
   },
   scroll: {
-    padding: 24,
-    paddingBottom: 48,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xl + SPACING.md,
   },
   welcome: {
     fontSize: 22,

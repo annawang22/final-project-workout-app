@@ -7,11 +7,9 @@ import GoalsStackNavigator from "./GoalsStackNavigator";
 import ProfileStackNavigator from "./ProfileStackNavigator";
 import ProfileTabBarIcon from "./ProfileTabBarIcon";
 import { TabBarProfileProvider } from "./TabBarProfileContext";
+import { COLORS, TAB_BAR } from "../utils/theme";
 
 const Tab = createBottomTabNavigator();
-
-const TAB_ACTIVE = "#222";
-const TAB_INACTIVE = "#8e8e93";
 
 export default function MainTabNavigator() {
   return (
@@ -19,16 +17,16 @@ export default function MainTabNavigator() {
       <Tab.Navigator
         screenOptions={{
           headerTitleAlign: "center",
-          tabBarActiveTintColor: TAB_ACTIVE,
-          tabBarInactiveTintColor: TAB_INACTIVE,
+          tabBarActiveTintColor: COLORS.primary,
+          tabBarInactiveTintColor: COLORS.textSecondary,
           tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: "600",
-            letterSpacing: 0.2,
+            fontSize: TAB_BAR.labelFontSize,
+            fontWeight: TAB_BAR.labelFontWeight,
+            letterSpacing: TAB_BAR.labelLetterSpacing,
           },
           tabBarStyle: {
-            backgroundColor: "#fff",
-            borderTopColor: "#e5e5ea",
+            backgroundColor: COLORS.background,
+            borderTopColor: COLORS.border,
             borderTopWidth: StyleSheet.hairlineWidth,
           },
         }}

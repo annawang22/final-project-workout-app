@@ -3,6 +3,8 @@ import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { COLORS } from "../utils/theme";
+
 import { useTabBarProfile } from "./TabBarProfileContext";
 
 type Props = {
@@ -68,6 +70,6 @@ export default function ProfileTabBarIcon({ focused, color: tint, size }: Props)
 const styles = StyleSheet.create({
   clip: {
     overflow: "hidden",
-    backgroundColor: "#e8e8e8",
+    backgroundColor: COLORS.card,
   },
 });

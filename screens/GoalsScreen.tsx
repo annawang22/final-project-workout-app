@@ -35,7 +35,7 @@ import {
 import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import AppHeader, { APP_HEADER_HORIZONTAL } from "../components/AppHeader";
+import AppHeader from "../components/AppHeader";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import {
     addGoal,
@@ -44,6 +44,13 @@ import {
     setGoalActiveOnHome,
     updateGoalText,
 } from "../utils/storage";
+import {
+  COLORS,
+  CONTENT_BOTTOM,
+  SCREEN_HORIZONTAL,
+  SPACING,
+  typography,
+} from "../utils/theme";
 
 type Goal = {
   id: string;
@@ -441,7 +448,7 @@ export default function GoalsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: 88 + insets.bottom },
+            { paddingBottom: CONTENT_BOTTOM.goalsList + insets.bottom },
           ]}
           renderItem={({ item }) => {
             return (
@@ -467,7 +474,7 @@ export default function GoalsScreen() {
         onPress={openAdd}
         style={({ pressed }) => [
           styles.fab,
-          { bottom: 24 + insets.bottom },
+          { bottom: SPACING.lg + insets.bottom },
           pressed && styles.pressed,
         ]}
         hitSlop={6}
@@ -551,7 +558,7 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
   },
   loading: {
     flex: 1,
@@ -560,20 +567,20 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   listContent: {
-    paddingHorizontal: APP_HEADER_HORIZONTAL,
-    paddingTop: 16,
+    paddingHorizontal: SCREEN_HORIZONTAL,
+    paddingTop: SPACING.md,
   },
   emptyWrap: {
     flex: 1,
-    paddingHorizontal: APP_HEADER_HORIZONTAL,
-    paddingVertical: 24,
+    paddingHorizontal: SCREEN_HORIZONTAL,
+    paddingVertical: SPACING.lg,
     justifyContent: "center",
   },
   emptyText: {
-    fontSize: 16,
+    ...typography.body,
     lineHeight: 24,
     textAlign: "center",
-    color: "#333",
+    color: COLORS.textSecondary,
   },
   rowOuter: {
     marginBottom: 10,
@@ -656,7 +663,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    right: 20,
+    right: SPACING.md + SPACING.xs,
     width: 56,
     height: 56,
     borderRadius: 28,

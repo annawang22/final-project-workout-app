@@ -12,12 +12,20 @@ export default function ProfileStackNavigator() {
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerShown: false,
+          /** Used as iOS back label on Logbook (not the route key `ProfileMain`). */
+          title: "Profile",
+        }}
       />
       <Stack.Screen
         name="Logbook"
         component={LogbookScreen}
-        options={{ title: "Logbook" }}
+        options={{
+          title: "Logbook",
+          /** iOS back chevron label (parent route is `ProfileMain`). */
+          headerBackTitle: "Profile",
+        }}
       />
     </Stack.Navigator>
   );

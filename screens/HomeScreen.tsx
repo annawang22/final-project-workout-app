@@ -31,7 +31,14 @@ import {
   refreshDebugDateOverrideCache,
 } from "../utils/storage";
 
-import AppHeader, { APP_HEADER_HORIZONTAL } from "../components/AppHeader";
+import AppHeader from "../components/AppHeader";
+import {
+  COLORS,
+  CONTENT_BOTTOM,
+  SCREEN_HORIZONTAL,
+  SPACING,
+  typography,
+} from "../utils/theme";
 
 const EMPTY_STATE = "YAY you finished all exercises for the day";
 
@@ -176,7 +183,9 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <AppHeader title="Home" />
-      <Text style={[styles.dateText, { paddingTop: 10 }]}>{dateHeader}</Text>
+      <Text style={[styles.dateText, { paddingTop: SPACING.sm + SPACING.xs }]}>
+        {dateHeader}
+      </Text>
 
       {rows.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -188,9 +197,9 @@ export default function HomeScreen() {
           extraData={completingKeys}
           keyExtractor={(item) => item.key}
           contentContainerStyle={{
-            paddingHorizontal: APP_HEADER_HORIZONTAL,
+            paddingHorizontal: SCREEN_HORIZONTAL,
             paddingTop: 12,
-            paddingBottom: 100 + insets.bottom,
+            paddingBottom: CONTENT_BOTTOM.homeList + insets.bottom,
           }}
           renderItem={({ item }) => {
             const ex = item.exercise;
@@ -234,7 +243,10 @@ export default function HomeScreen() {
         onPress={openModal}
         style={({ pressed }) => [
           styles.fab,
-          { bottom: 24 + insets.bottom, right: 20 },
+          {
+            bottom: SPACING.lg + insets.bottom,
+            right: SPACING.md + SPACING.xs,
+          },
           pressed && styles.pressed,
         ]}
         hitSlop={6}
@@ -328,7 +340,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#fff" },
+  screen: { flex: 1, backgroundColor: COLORS.background },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -336,21 +348,21 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   dateText: {
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.subheader,
+    color: COLORS.textPrimary,
     textAlign: "center",
-    paddingHorizontal: APP_HEADER_HORIZONTAL,
-    paddingBottom: 8,
+    paddingHorizontal: SCREEN_HORIZONTAL,
+    paddingBottom: SPACING.sm,
   },
   emptyWrap: {
     flex: 1,
-    paddingHorizontal: APP_HEADER_HORIZONTAL,
+    paddingHorizontal: SCREEN_HORIZONTAL,
     justifyContent: "center",
   },
   emptyText: {
-    fontSize: 16,
+    ...typography.body,
     textAlign: "center",
-    color: "#333",
+    color: COLORS.textSecondary,
     lineHeight: 24,
   },
   row: {

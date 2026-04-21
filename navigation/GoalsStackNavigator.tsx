@@ -12,12 +12,20 @@ export default function GoalsStackNavigator() {
       <Stack.Screen
         name="GoalsList"
         component={GoalsScreen}
-        options={{ headerShown: false }}
+        options={{
+          headerShown: false,
+          /** Used as iOS back label on Goal Detail (not the route key `GoalsList`). */
+          title: "Goals",
+        }}
       />
       <Stack.Screen
         name="GoalDetail"
         component={GoalDetailScreen}
-        options={{ title: "Goal" }}
+        options={{
+          title: "Goal",
+          /** iOS back chevron label (parent route is `GoalsList`). */
+          headerBackTitle: "Goals",
+        }}
       />
     </Stack.Navigator>
   );

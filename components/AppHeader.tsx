@@ -1,14 +1,12 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-/** Use for content that should align with the left edge of `AppHeader` titles. */
-export const APP_HEADER_HORIZONTAL = 16;
-
-const TITLE_FONT_SIZE = 22;
-const TITLE_FONT_WEIGHT: "700" = "700";
-const SAFE_EXTRA_TOP = 8;
-const TITLE_BOTTOM = 12;
-const DIVIDER_COLOR = "#e5e5ea";
+import {
+  COLORS,
+  SCREEN_HORIZONTAL,
+  SPACING,
+  typography,
+} from "../utils/theme";
 
 type Props = {
   title: string;
@@ -16,7 +14,7 @@ type Props = {
 
 /**
  * Unified in-screen title for Home, Goals list, and Profile main.
- * Safe area, typography, and divider are defined only here (UI Phase 2).
+ * Tokens from `utils/theme.js` (UI Phase 3).
  */
 export default function AppHeader({ title }: Props) {
   const insets = useSafeAreaInsets();
@@ -27,9 +25,9 @@ export default function AppHeader({ title }: Props) {
         style={[
           styles.inner,
           {
-            paddingTop: insets.top + SAFE_EXTRA_TOP,
-            paddingHorizontal: APP_HEADER_HORIZONTAL,
-            paddingBottom: TITLE_BOTTOM,
+            paddingTop: insets.top + SPACING.sm,
+            paddingHorizontal: SCREEN_HORIZONTAL,
+            paddingBottom: SPACING.sm + SPACING.xs,
           },
         ]}
       >
@@ -42,22 +40,21 @@ export default function AppHeader({ title }: Props) {
           {title}
         </Text>
       </View>
-      <View style={[styles.divider, { backgroundColor: DIVIDER_COLOR }]} />
+      <View style={[styles.divider, { backgroundColor: COLORS.border }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outer: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
   },
   inner: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.background,
   },
   title: {
-    fontSize: TITLE_FONT_SIZE,
-    fontWeight: TITLE_FONT_WEIGHT,
-    color: "#222",
+    ...typography.header,
+    color: COLORS.textPrimary,
     textAlign: "left",
   },
   divider: {
