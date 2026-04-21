@@ -21,27 +21,27 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Animated,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import {
-  addGoal,
-  deleteGoal,
-  getGoals,
-  setGoalActiveOnHome,
-  updateGoalText,
+    addGoal,
+    deleteGoal,
+    getGoals,
+    setGoalActiveOnHome,
+    updateGoalText,
 } from "../utils/storage";
 
 type Goal = {

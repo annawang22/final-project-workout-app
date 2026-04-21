@@ -1670,4 +1670,14 @@ Whether you consider the app stable
 
 This is the final phase. Do not start a new phase.
 
-41) 
+## RETURNED TO CURSOR PRO (ASK)
+3) whenever i hop from another screen to goals the button on the top right to like fades from black to white, im curious on why that happens? where does this issue stem from? and is it possible to fix?
+
+## RETURNED TO CURSOR PRO (AGENT)
+41) great work. i want to now hone in on the small things. right now whenever, i go to the goal screen, the top right plus button seems to have a lag and so it shows black and then returns back to white (how its supposed to look). im not too sure if this is happening to other buttons, but i would like to fix this. could you please take a look at my code and see if there are any other places where similar logic occurs? could you also reiterate back to me what i just told you? if i agree with your interpretation of the problem, i will prompt you to think of an implementation approach.
+42) i actually see this issue occur in two places on when you return back to the goals screen from whereever and two, when you double click into the goal detail screen where the "My Goals" back button has that same lagging effect. reiterate back to me what i have just explained this issue to you is. if i agree we can move to thinking about implementation. 
+43) yes that is exactly the issue. lead me through how you would fix this. if i agree, i will prompt you to do implementation.
+44) let's try implementing this and see if this works. 
+45) the issue still remains. however, it seems to me that the lag is faster now? could you explain to me a different approach to fixing this issue?
+46) im on iOS. the flash happens when switching tabs AND when Goals -> Goal detail -> back without leaving Goals. the difference is that switching tabs has a longer lag than Goals -> Goal detail -> back. please go about implementation based on how you see fit.
+47) it's the back label

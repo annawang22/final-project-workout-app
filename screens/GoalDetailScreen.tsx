@@ -3,15 +3,15 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useLayoutEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -21,12 +21,12 @@ import RepeatConfigModal from "../components/RepeatConfigModal";
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
 import type { RepeatConfig } from "../types/repeat";
 import {
-  addExerciseToGoal,
-  deleteExerciseFromGoal,
-  getGoalById,
-  reorderExercisesInGoal,
-  sanitizeRepeatConfig,
-  updateExerciseInGoal,
+    addExerciseToGoal,
+    deleteExerciseFromGoal,
+    getGoalById,
+    reorderExercisesInGoal,
+    sanitizeRepeatConfig,
+    updateExerciseInGoal,
 } from "../utils/storage";
 
 export type Exercise = {

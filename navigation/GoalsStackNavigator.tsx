@@ -1,8 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import type { GoalsStackParamList } from "./goalsStackTypes";
 import GoalDetailScreen from "../screens/GoalDetailScreen";
 import GoalsScreen from "../screens/GoalsScreen";
+import type { GoalsStackParamList } from "./goalsStackTypes";
 
 const Stack = createNativeStackNavigator<GoalsStackParamList>();
 
