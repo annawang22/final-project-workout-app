@@ -1,7 +1,7 @@
 /**
  * Design tokens — UI Phase 3 spacing/typography + UI Phase 4 light/dark colors.
  * Runtime UI colors use `getTheme(isDark)` / `useTheme().colors`, except
- * `PROFILE_DARK_MODE_SWITCH` (fixed Switch chrome; see that export).
+ * `PROFILE_DARK_MODE_SWITCH` (fixed Switch chrome) and legacy `COLORS` alias.
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -49,6 +49,7 @@ const LIGHT_EXTRA = {
   goalSwipeInactive: "#EDF2F6",
   goalSwipeLabelInactive: "#6C7785",
   debugHeading: "#AA6600",
+  onPrimary: "#FFFFFF",
 };
 
 const DARK_EXTRA = {
@@ -74,6 +75,7 @@ const DARK_EXTRA = {
   goalSwipeInactive: "#2C2C2E",
   goalSwipeLabelInactive: "#8E8E93",
   debugHeading: "#FFB020",
+  onPrimary: "#FFFFFF",
 };
 
 /**
@@ -85,6 +87,12 @@ export function getTheme(isDarkMode) {
   const extra = isDarkMode ? DARK_EXTRA : LIGHT_EXTRA;
   return { ...base, ...extra };
 }
+
+/**
+ * Legacy alias — same merged shape as `getTheme(false)`.
+ * Fixes `import { COLORS } from "../utils/theme"` from older UI passes / cached bundles.
+ */
+export const COLORS = getTheme(false);
 
 /**
  * Profile "Dark Mode" row `Switch` only — fixed chrome so track/thumb props do

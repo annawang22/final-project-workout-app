@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -50,52 +51,76 @@ function createHomeStyles(colors: AppColors) {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      minHeight: 120,
+      minHeight: SPACING.xl * 4,
+    },
+    dateSection: {
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.lg,
     },
     dateText: {
-      ...typography.subheader,
+      ...(typography.header as TextStyle),
       color: colors.textPrimary,
-      textAlign: "center",
-      paddingHorizontal: SCREEN_HORIZONTAL,
-      paddingBottom: SPACING.sm,
+      textAlign: "left",
     },
     emptyWrap: {
       flex: 1,
       paddingHorizontal: SCREEN_HORIZONTAL,
-      justifyContent: "center",
+      paddingTop: SPACING.xl + SPACING.lg,
+      alignItems: "center",
     },
     emptyText: {
-      ...typography.body,
+      ...(typography.body as TextStyle),
+      fontSize: 17,
+      fontWeight: "500",
+      lineHeight: 26,
       textAlign: "center",
       color: colors.textSecondary,
-      lineHeight: 24,
     },
     row: {
       flexDirection: "row",
-      alignItems: "flex-start",
-      paddingVertical: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      alignItems: "center",
+      paddingVertical: SPACING.md,
     },
     checkbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 4,
+      width: SPACING.lg,
+      height: SPACING.lg,
+      borderRadius: SPACING.xs,
       borderWidth: 2,
       borderColor: colors.neutralBorderSoft,
-      marginRight: 12,
-      marginTop: 2,
+      marginRight: SPACING.md,
     },
-    rowBody: { flex: 1 },
+    rowBody: { flex: 1, minWidth: 0 },
     rowTitle: {
-      fontSize: 16,
-      fontWeight: "600",
+      ...(typography.subheader as TextStyle),
       color: colors.textPrimary,
     },
-    rowMeta: { fontSize: 14, color: colors.rowMeta, marginTop: 4 },
-    rowHint: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-    rowCompleting: { opacity: 0.45 },
-    checkboxHit: { paddingVertical: 4, paddingRight: 4 },
+    rowTitleCompleting: {
+      color: colors.textSecondary,
+      opacity: 0.88,
+    },
+    rowMeta: {
+      ...(typography.body as TextStyle),
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    },
+    rowMetaCompleting: {
+      opacity: 0.85,
+    },
+    rowHint: {
+      ...(typography.body as TextStyle),
+      fontSize: 14,
+      color: colors.textMuted,
+      marginTop: SPACING.xs,
+    },
+    rowHintCompleting: {
+      opacity: 0.85,
+    },
+    checkboxHit: {
+      paddingVertical: SPACING.xs,
+      paddingRight: SPACING.xs,
+      justifyContent: "center",
+    },
     checkboxDone: {
       borderColor: colors.interactiveStrong,
       backgroundColor: colors.checkboxTrack,
@@ -109,16 +134,16 @@ function createHomeStyles(colors: AppColors) {
     },
     fab: {
       position: "absolute",
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.interactiveStrong,
+      width: SPACING.xl + SPACING.lg,
+      height: SPACING.xl + SPACING.lg,
+      borderRadius: (SPACING.xl + SPACING.lg) / 2,
+      backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
-      elevation: 4,
+      elevation: SPACING.xs,
     },
     fabText: {
-      color: colors.onInteractive,
+      color: colors.onPrimary,
       fontSize: 32,
       lineHeight: 36,
       fontWeight: "500",
@@ -132,46 +157,53 @@ function createHomeStyles(colors: AppColors) {
     modalAvoid: { width: "100%" },
     modalCard: {
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      padding: 20,
+      borderTopLeftRadius: SPACING.sm + SPACING.xs,
+      borderTopRightRadius: SPACING.sm + SPACING.xs,
+      padding: SPACING.lg,
     },
     modalTitle: {
       fontSize: 18,
       fontWeight: "700",
-      marginBottom: 12,
+      marginBottom: SPACING.md,
       color: colors.textPrimary,
     },
     label: {
       fontSize: 14,
       fontWeight: "600",
-      marginBottom: 4,
+      marginBottom: SPACING.xs,
       color: colors.textPrimary,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 10,
+      borderRadius: SPACING.sm,
+      paddingHorizontal: SPACING.md - SPACING.xs,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      marginBottom: SPACING.sm + SPACING.xs,
       color: colors.textPrimary,
     },
     row2: { flexDirection: "row" },
-    half: { flex: 1, marginRight: 8 },
-    errorText: { color: colors.danger, marginBottom: 8 },
+    half: { flex: 1, marginRight: SPACING.sm },
+    errorText: {
+      color: colors.danger,
+      marginBottom: SPACING.sm,
+    },
     modalActions: {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
-      marginTop: 8,
+      marginTop: SPACING.sm,
     },
-    link: { color: colors.link, fontSize: 16, marginRight: 20 },
+    link: {
+      color: colors.link,
+      fontSize: 16,
+      marginRight: SPACING.lg,
+    },
     primaryBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 8,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: SPACING.sm,
     },
     primaryLabel: {
       color: colors.onInteractive,
@@ -324,9 +356,9 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <AppHeader title="Home" />
-      <Text style={[styles.dateText, { paddingTop: SPACING.sm + SPACING.xs }]}>
-        {dateHeader}
-      </Text>
+      <View style={styles.dateSection}>
+        <Text style={styles.dateText}>{dateHeader}</Text>
+      </View>
 
       {rows.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -339,7 +371,7 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{
             paddingHorizontal: SCREEN_HORIZONTAL,
-            paddingTop: SPACING.sm + SPACING.xs,
+            paddingTop: 0,
             paddingBottom: CONTENT_BOTTOM.homeList + insets.bottom,
           }}
           renderItem={({ item }) => {
@@ -347,12 +379,10 @@ export default function HomeScreen() {
             const detail = formatHomeExerciseDetails(ex);
             const isCompleting = !!completingKeys[item.key];
             return (
-              <View
-                style={[styles.row, isCompleting && styles.rowCompleting]}
-              >
+              <View style={styles.row}>
                 <Pressable
                   onPress={() => scheduleComplete(item)}
-                  hitSlop={8}
+                  hitSlop={SPACING.sm}
                   style={styles.checkboxHit}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: isCompleting }}
@@ -366,12 +396,36 @@ export default function HomeScreen() {
                   </View>
                 </Pressable>
                 <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>{ex.name}</Text>
+                  <Text
+                    style={[
+                      styles.rowTitle,
+                      isCompleting && styles.rowTitleCompleting,
+                    ]}
+                    numberOfLines={3}
+                  >
+                    {ex.name}
+                  </Text>
                   {detail !== "" ? (
-                    <Text style={styles.rowMeta}>{detail}</Text>
+                    <Text
+                      style={[
+                        styles.rowMeta,
+                        isCompleting && styles.rowMetaCompleting,
+                      ]}
+                      numberOfLines={4}
+                    >
+                      {detail}
+                    </Text>
                   ) : null}
                   {item.source === "goal" ? (
-                    <Text style={styles.rowHint}>{item.goalText}</Text>
+                    <Text
+                      style={[
+                        styles.rowHint,
+                        isCompleting && styles.rowHintCompleting,
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {item.goalText}
+                    </Text>
                   ) : null}
                 </View>
               </View>

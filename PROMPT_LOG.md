@@ -2380,7 +2380,145 @@ Do not start UI Phase 5
 24) yes please go ahead and rewrite phase 5 with a non card version.
 
 ## RETURNED TO CURSOR PRO (AGENT)
-61) 
+61) UI Phase 4 is complete and verified. We are now starting UI Phase 5.
+Read SPECUIDesign.md and review the Phase UI-5 — Home Screen Styling section before writing any code.
+Your job is to refine the Home screen visually while preserving the existing structure. Do not introduce card-based layouts. Do not start UI Phase 6.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. Do NOT Change Layout Structure
+Keep your current list-based layout
+Do NOT convert items into cards
+Do NOT wrap items in containers that visually behave like cards
+This phase is:
+👉 refinement, not redesign
+
+2. UI ONLY — NO LOGIC CHANGES
+Do NOT modify:
+completion logic
+repeat logic
+logbook
+data flow
+storage
+
+3. Use Theme System Only
+All styling must come from:
+COLORS / theme
+SPACING
+TYPOGRAPHY
+No hardcoded values.
+
+Build the following:
+
+1. Improve Overall Screen Spacing
+Ensure consistent horizontal padding using SPACING.md
+Add consistent vertical spacing between sections
+Remove any cramped or uneven spacing
+Goal:
+👉 screen should feel breathable and clean
+
+2. Refine Date Header (Anchor Element)
+The date (e.g., "Monday, April 20") should:
+use TYPOGRAPHY.header or slightly adjusted variant
+align perfectly with screen padding
+have clear spacing below (SPACING.lg recommended)
+This should feel like a strong section anchor
+
+3. Refine Exercise List Items (NO CARDS)
+Keep each exercise as a simple row, but improve:
+A. Vertical Spacing
+increase space between items (SPACING.md or SPACING.lg)
+remove cramped stacking
+
+B. Optional Divider (Choose ONE approach)
+You may use ONE of these:
+Option 1 (Preferred — modern minimalist):
+no divider
+rely on spacing only
+Option 2:
+very thin divider using theme.border
+low visual weight
+⚠️ Do NOT use heavy borders
+
+4. Typography Hierarchy (CRITICAL)
+Each exercise item must have:
+Primary (Exercise Name)
+use TYPOGRAPHY.subheader
+use theme.textPrimary
+Secondary (Details: sets/reps/weight/duration)
+use TYPOGRAPHY.body
+use theme.textSecondary
+slightly smaller or lighter visually
+
+5. Checkbox Alignment
+Checkbox must be:
+vertically centered with text block
+consistently aligned across all rows
+No floating or misaligned checkboxes
+
+6. Completion Styling (IMPORTANT)
+When an exercise is completed:
+text should:
+reduce opacity OR
+use theme.textSecondary
+optionally apply:
+slight fade effect
+Do NOT:
+remove item immediately (respect delay logic)
+dramatically change layout
+
+7. Empty State Refinement
+When no exercises:
+YAY you finished all exercises for the day
+
+Style it:
+centered horizontally
+add vertical spacing from top
+use theme.textSecondary
+slightly larger than body text
+Goal:
+👉 feel intentional, not like a placeholder
+
+8. Floating "+" Button Refinement
+Improve visual quality only:
+circular shape
+positioned bottom-right
+uses theme.primary
+strong contrast (white icon)
+Do NOT change behavior.
+
+9. Dark Mode Verification
+Ensure:
+text is readable in dark mode
+spacing still feels correct
+no invisible elements
+no low-contrast text
+
+10. No Layout Shifts
+Verify:
+scrolling still works
+list rendering unchanged
+no overlap with navigation bar
+safe area respected
+
+11. Edge Cases
+Handle safely:
+long exercise names
+missing optional fields
+empty list
+switching users
+rapid interactions
+No crashes allowed.
+
+When you are done:
+Go through the UI Phase 5 "Done When" checklist in SPECUIDesign.md and confirm each item passes.
+Then stop and tell me:
+What you refined
+How you improved spacing and hierarchy
+Whether you used dividers or spacing-only
+How completion styling works
+Anything that needs my input before UI Phase 6
+
+Do not start UI Phase 6.
 
 ## RETURNED TO CHATGPT PRO
 25) 

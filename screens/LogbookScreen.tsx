@@ -141,7 +141,7 @@ function rowUndoKey(dateKey: string, item: unknown): string {
   return `${dateKey}|${g}|${id}`;
 }
 
-export default function LogbookScreen({}: Props) {
+export default function LogbookScreen(_props: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createLogbookStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -230,66 +230,69 @@ export default function LogbookScreen({}: Props) {
 
   return (
     <View style={styles.root}>
-    <SectionList
-      sections={sections}
-      ListHeaderComponent={
-        <Text style={styles.hint}>
-          Tap a completed exercise to restore it to Home.
-        </Text>
-      }
-      keyExtractor={(item, index) => {
-        const sh = exerciseRowShape(item);
-        const id =
-          sh?.id ??
-          String(
-            item && typeof item === "object" && !Array.isArray(item)
-              ? (item as Record<string, unknown>).id
-              : "",
-          ).trim();
-        return id ? `e:${id}:${index}` : `row:${index}`;
-      }}
-      renderSectionHeader={({ section }) => (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-          <Text style={styles.sectionYmd}>{section.dateKey}</Text>
-        </View>
-      )}
-      renderItem={({ item, section }) => {
-        const shaped = exerciseRowShape(item);
-        const name =
-          shaped?.name ??
-          (typeof item === "object" &&
-          item &&
-          String((item as Record<string, unknown>).name ?? "").trim()
-            ? String((item as Record<string, unknown>).name).trim()
-            : "Exercise");
-        const detail = shaped ? formatHomeExerciseDetails(shaped) : "";
-        return (
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={() => void handleUndoRow(section.dateKey, item)}
-            accessibilityRole="button"
-            accessibilityLabel={`Restore ${name} to Home`}
-          >
-            <View style={styles.checkboxDone}>
-              <Text style={styles.checkboxMark}>✓</Text>
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>{name}</Text>
-              {detail !== "" ? (
-                <Text style={styles.rowMeta}>{detail}</Text>
-              ) : null}
-            </View>
-          </Pressable>
-        );
-      }}
-      contentContainerStyle={{
-        paddingHorizontal: SCREEN_HORIZONTAL,
-        paddingTop: SPACING.sm,
-        paddingBottom: SPACING.lg + insets.bottom,
-      }}
-      stickySectionHeadersEnabled={false}
-    />
+      <SectionList
+        sections={sections}
+        ListHeaderComponent={
+          <Text style={styles.hint}>
+            Tap a completed exercise to restore it to Home.
+          </Text>
+        }
+        keyExtractor={(item, index) => {
+          const sh = exerciseRowShape(item);
+          const id =
+            sh?.id ??
+            String(
+              item && typeof item === "object" && !Array.isArray(item)
+                ? (item as Record<string, unknown>).id
+                : "",
+            ).trim();
+          return id ? `e:${id}:${index}` : `row:${index}`;
+        }}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.sectionYmd}>{section.dateKey}</Text>
+          </View>
+        )}
+        renderItem={({ item, section }) => {
+          const shaped = exerciseRowShape(item);
+          const name =
+            shaped?.name ??
+            (typeof item === "object" &&
+            item &&
+            String((item as Record<string, unknown>).name ?? "").trim()
+              ? String((item as Record<string, unknown>).name).trim()
+              : "Exercise");
+          const detail = shaped ? formatHomeExerciseDetails(shaped) : "";
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowPressed,
+              ]}
+              onPress={() => void handleUndoRow(section.dateKey, item)}
+              accessibilityRole="button"
+              accessibilityLabel={`Restore ${name} to Home`}
+            >
+              <View style={styles.checkboxDone}>
+                <Text style={styles.checkboxMark}>✓</Text>
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle}>{name}</Text>
+                {detail !== "" ? (
+                  <Text style={styles.rowMeta}>{detail}</Text>
+                ) : null}
+              </View>
+            </Pressable>
+          );
+        }}
+        contentContainerStyle={{
+          paddingHorizontal: SCREEN_HORIZONTAL,
+          paddingTop: SPACING.sm,
+          paddingBottom: SPACING.lg + insets.bottom,
+        }}
+        stickySectionHeadersEnabled={false}
+      />
     </View>
   );
 }
