@@ -287,7 +287,7 @@ export default function GoalDetailScreen() {
       </View>
 
       <Modal
-        visible={modalOpen}
+        visible={modalOpen && !repeatModalOpen}
         animationType="slide"
         transparent
         onRequestClose={closeModal}

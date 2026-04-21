@@ -477,3 +477,4 @@ User B logs in → sees none of it
 Switch back → User A data intact
 
 19) ok so i see some initial problems: when i click on repeat, i don't see any popup to toggle the repeat. do you understand what the problem is? explain to me what the problem is. if i agree, i will allow you to fix it.
+20) sounds good. please fix this. and then tell me what you changed
