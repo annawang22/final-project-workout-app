@@ -1102,4 +1102,193 @@ User B logs in → should see none of User A’s logbook/completion state
 User B completes different exercises
 Switch back → User A data intact
 
-35) 
+## RETURNED TO CHATGPT PRO
+13) once again, this was a phenomenal prompt. can you write my phase 8 prompt? keep in my mind that in phase 7, i added a section of code that allowed me to undo a checking off action to help me debug because i didn't have a logbook just yet. now that we are creating one, just comment out this portion of code and indicate that it was for phase 7 debugging purposes. 
+
+## RETURNED TO CURSOR PRO (AGENT)
+35) Phase 7 is complete and verified. We are now starting Phase 8.
+Read SPEC.md and review the Phase 8 section in full before writing any code.
+Your job is to complete every task in Phase 8 and verify every item in the "Done When" checklist before stopping. Do not start Phase 9.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All profile and logbook data must be scoped per user
+No cross-user data leakage under any condition
+
+2. Use Effective App Date Consistently
+Logbook display and grouping must align with:
+how data was written in Phase 7
+Continue using:
+getEffectiveToday()
+where relevant for consistency and debugging
+
+3. Retire Phase 7 Debug Undo (DO NOT DELETE)
+You previously added a temporary debug undo mechanism on the Home screen.
+You must now:
+Comment out that entire undo implementation
+Do NOT delete it
+Add a clear comment above it explaining:
+// PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+// This undo mechanism was used to test completion behavior before Logbook UI existed.
+// It is intentionally commented out and can be referenced if needed for debugging.
+
+⚠️ Requirements:
+The undo UI must no longer appear on Home
+It must not affect logic anymore
+Completion flow must now be final and irreversible from Home
+
+Build the following:
+
+1. Profile Screen (Full Implementation)
+Expand the Profile screen to include:
+Top Section
+Text: "Welcome [username]"
+Use stored user data
+
+Profile Data Section
+Display:
+Name (editable)
+Default: "Your Name"
+Editable inline or via simple input
+Must persist to AsyncStorage
+Username (read-only)
+Pulled from stored user
+Profile Picture
+Allow user to select an image
+Store URI in AsyncStorage
+Display image if present
+Handle null image safely
+
+2. Profile Data Model
+Stored under a user-scoped key (e.g., profile_<username>):
+{
+  name: "Your Name",
+  username: "username",
+  profileImage: "uri-or-null"
+}
+
+
+3. Profile Storage Helpers
+Add to /utils/storage.js:
+getProfile()
+saveProfile(profile)
+Requirements:
+async/await
+try/catch
+user-scoped keys
+safe handling of missing data
+
+4. Logbook Screen (NEW)
+Create a new Logbook screen accessible from Profile.
+
+5. Navigation
+Add a "Logbook" button on Profile
+Navigates to Logbook screen
+Logbook screen must have:
+Back button → returns to Profile
+
+6. Logbook UI Structure
+Title: "Logbook"
+Entries grouped by date
+Most recent date at the top
+For each date:
+show date header (YYYY-MM-DD or formatted)
+list of exercises completed that day
+Each exercise:
+name
+optional details (sets, reps, weight, duration)
+visually:
+greyed out
+checkbox shown as checked
+
+7. Logbook Data Source
+Pull from "logbook_<username>" via storage helpers
+Must reflect data written in Phase 7
+
+8. No Undo Yet (Important)
+⚠️ Do NOT implement undo from the Logbook yet
+That is Phase 9
+Tapping exercises in Logbook should do nothing for now
+Logbook is read-only in this phase
+
+9. Profile + Logbook Persistence
+After kill-and-reopen:
+Profile data must persist:
+name
+image
+Logbook must persist:
+all entries
+correct grouping
+correct ordering
+
+10. Logout Behavior (Reconfirm)
+Logout must:
+set isLoggedIn = false
+navigate to Login
+NOT delete:
+goals
+exercises
+home_exercises
+logbook
+profile
+
+11. Edge Cases
+Handle safely:
+no profile stored yet
+no logbook data yet
+empty logbook (no entries)
+missing profile image
+empty name input (must be blocked)
+switching users with different profile/logbook data
+No crashes allowed.
+
+When you are done:
+Go through the Phase 8 "Done When" checklist in SPEC.md and confirm each item passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren’t specified
+How you handled profile persistence
+How logbook grouping is implemented
+Confirmation that Phase 7 debug undo is fully disabled (not deleted)
+Anything that needs my input before Phase 9
+
+Do not start Phase 9.
+
+I will run these kill-and-reopen tests:
+Profile Tests
+Name defaults to "Your Name"
+Edit name → persists after restart
+Username displays correctly
+Profile picture saves and persists
+Empty name cannot be saved
+
+Logbook Tests
+Logbook opens from Profile
+Entries grouped by date
+Most recent date first
+Exercises display correctly with details
+Exercises are greyed out and checked
+
+No Undo Test
+Home screen should NOT show undo anymore
+Completing an exercise should be final
+
+Persistence Tests
+Kill app → reopen:
+Profile data remains
+Logbook remains
+No crashes
+
+Logout Tests
+Logout → go to Login
+Log back in → all data still intact
+
+🔐 Multi-User Isolation Tests
+User A:
+profile + logbook created
+User B logs in:
+sees none of User A’s data
+User B creates their own data
+Switch back → User A data intact
+
+36) 

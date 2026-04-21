@@ -14,11 +14,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+// This undo mechanism was used to test completion behavior before Logbook UI existed.
+// It is intentionally commented out and can be referenced if needed for debugging.
+// (See also commented state, handlers, JSX, and styles in this file.)
+// import { type LastCompletionUndoDebug, undoLastCompletion } from "../utils/homeCompletion";
 import {
   executeHomeCompletion,
   isAlreadyCompletedForDate,
-  type LastCompletionUndoDebug,
-  undoLastCompletion,
 } from "../utils/homeCompletion";
 import {
   type HomeMergedRow,
@@ -29,7 +32,6 @@ import {
 import {
   addHomeStandaloneExercise,
   formatDateYMD,
-  getActiveUser,
   getEffectiveToday,
   refreshDebugDateOverrideCache,
 } from "../utils/storage";
@@ -50,27 +52,24 @@ export default function HomeScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   /** Phase 7 — rows actively animating to complete (grey + checkmark before persistence). */
   const [completingKeys, setCompletingKeys] = useState<Record<string, boolean>>({});
-  /**
-   * DEBUG / TEMPORARY — surface last completion for safe testing until Logbook screen exists (Phase 8+).
-   * Not final UX; remove when Logbook supports undo/history.
-   */
-  const [lastUndo, setLastUndo] = useState<LastCompletionUndoDebug | null>(null);
+  // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+  // const [lastUndo, setLastUndo] = useState<LastCompletionUndoDebug | null>(null);
   const completingGuard = useRef(new Set<string>());
 
   const loadHome = useCallback(async () => {
     await refreshDebugDateOverrideCache();
     const eff = getEffectiveToday();
-    const activeUser = await getActiveUser();
     setDateHeader(formatHomeDateHeader(eff));
     const merged = await getMergedHomeExerciseRows(eff);
     setRows(merged);
     setLoading(false);
-    setLastUndo((prev) => {
-      if (!prev) {
-        return null;
-      }
-      return prev.sessionUser === activeUser ? prev : null;
-    });
+    // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+    // setLastUndo((prev) => {
+    //   if (!prev) {
+    //     return null;
+    //   }
+    //   return prev.sessionUser === activeUser ? prev : null;
+    // });
   }, []);
 
   const scheduleComplete = useCallback(
@@ -102,10 +101,9 @@ export default function HomeScreen() {
                 if (await isAlreadyCompletedForDate(item, ymd)) {
                   return;
                 }
-                const result = await executeHomeCompletion(item, eff);
-                if (result.ok && result.undo) {
-                  setLastUndo(result.undo);
-                }
+                await executeHomeCompletion(item, eff);
+                // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+                // if (result.ok && result.undo) setLastUndo(result.undo);
                 await loadHome();
               } catch (e) {
                 console.error("scheduleComplete", e);
@@ -129,17 +127,18 @@ export default function HomeScreen() {
     [loadHome],
   );
 
-  const handleUndoDebug = useCallback(async () => {
-    if (!lastUndo) {
-      return;
-    }
-    await refreshDebugDateOverrideCache();
-    const ok = await undoLastCompletion(lastUndo);
-    if (ok) {
-      setLastUndo(null);
-      await loadHome();
-    }
-  }, [lastUndo, loadHome]);
+  // PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
+  // const handleUndoDebug = useCallback(async () => {
+  //   if (!lastUndo) {
+  //     return;
+  //   }
+  //   await refreshDebugDateOverrideCache();
+  //   const ok = await undoLastCompletion(lastUndo);
+  //   if (ok) {
+  //     setLastUndo(null);
+  //     await loadHome();
+  //   }
+  // }, [lastUndo, loadHome]);
 
   useFocusEffect(
     useCallback(() => {
@@ -256,7 +255,7 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* DEBUG / TEMPORARY — Phase 7 undo strip; delete when Logbook ships */}
+      {/* PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
       {lastUndo ? (
         <View
           style={[styles.undoBanner, { bottom: 84 + insets.bottom }]}
@@ -268,6 +267,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : null}
+      */}
 
       <Pressable
         onPress={openModal}
@@ -420,6 +420,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxMark: { fontSize: 14, fontWeight: "700", color: "#222" },
+  /* PHASE 7 DEBUG TOOL (DISABLED IN PHASE 8)
   undoBanner: {
     position: "absolute",
     left: 16,
@@ -434,6 +435,7 @@ const styles = StyleSheet.create({
   },
   undoBannerText: { color: "#fff", fontSize: 14, flex: 1 },
   undoLink: { color: "#8cf", fontSize: 15, fontWeight: "600" },
+  */
   fab: {
     position: "absolute",
     width: 56,

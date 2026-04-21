@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * - activeUser      — string username for the current session (which account’s data to load)
  * - goals__u__*      — per-user goal lists (use goalsKeyForUser; legacy "goals" is migrated on read)
  * - home_exercises__u__* — per-user standalone Home exercises (legacy "home_exercises" is migrated on read)
- * - profile         — ProfileObject (name, username, image URI)
+ * - profile__u__*   — per-user profile (legacy `profile` migrated on read)
  * - logbook__u__*   — per-user logbook (legacy "logbook" migrated on read)
  *
  * DEBUG ONLY (not user data):
@@ -27,6 +27,8 @@ const KEYS = {
   HOME_EXERCISES_LEGACY: "home_exercises",
   /** @deprecated pre–per-user migration */
   LOGBOOK_LEGACY: "logbook",
+  /** @deprecated pre–per-user migration; unscoped profile moved into the active user’s key */
+  PROFILE_LEGACY: "profile",
 };
 
 /**
@@ -156,6 +158,148 @@ function homeExercisesKeyForUser(username) {
  */
 function logbookKeyForUser(username) {
   return `logbook__u__${encodeURIComponent(String(username))}`;
+}
+
+/**
+ * @param {string} username
+ * @returns {string}
+ */
+function profileKeyForUser(username) {
+  return `profile__u__${encodeURIComponent(String(username))}`;
+}
+
+const PROFILE_DEFAULT_NAME = "Your Name";
+
+/**
+ * @param {unknown} raw
+ * @param {string} accountUsername
+ * @returns {{ name: string, username: string, profileImage: string | null }}
+ */
+function normalizeProfileRow(raw, accountUsername) {
+  const u = String(accountUsername ?? "").trim();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return {
+      name: PROFILE_DEFAULT_NAME,
+      username: u,
+      profileImage: null,
+    };
+  }
+  const o = /** @type {Record<string, unknown>} */ (raw);
+  const nameIn = String(o.name ?? "").trim();
+  const name = nameIn.length > 0 ? nameIn : PROFILE_DEFAULT_NAME;
+  const img = o.profileImage;
+  const profileImage =
+    img != null && String(img).trim() !== "" ? String(img).trim() : null;
+  return {
+    name,
+    username: u,
+    profileImage,
+  };
+}
+
+async function readProfileRawForUser(username) {
+  const u = String(username ?? "").trim();
+  if (!u) {
+    return null;
+  }
+  const scopedKey = profileKeyForUser(u);
+  let rawStr = await AsyncStorage.getItem(scopedKey);
+  if (rawStr == null || rawStr === "") {
+    const legacy = await AsyncStorage.getItem(KEYS.PROFILE_LEGACY);
+    if (legacy != null && legacy !== "") {
+      try {
+        await AsyncStorage.setItem(scopedKey, legacy);
+        await AsyncStorage.removeItem(KEYS.PROFILE_LEGACY);
+        rawStr = legacy;
+      } catch (e) {
+        console.error("readProfileRawForUser migrate legacy", e);
+      }
+    }
+  }
+  if (rawStr == null || rawStr === "") {
+    return null;
+  }
+  try {
+    return JSON.parse(rawStr);
+  } catch (e) {
+    console.error("readProfileRawForUser JSON.parse", e);
+    return null;
+  }
+}
+
+async function writeProfileObjectForUser(username, obj) {
+  const u = String(username ?? "").trim();
+  if (!u) {
+    return false;
+  }
+  try {
+    await AsyncStorage.setItem(
+      profileKeyForUser(u),
+      JSON.stringify(obj),
+    );
+    return true;
+  } catch (e) {
+    console.error("writeProfileObjectForUser", e);
+    return false;
+  }
+}
+
+/**
+ * @returns {Promise<{ name: string, username: string, profileImage: string | null } | null>}
+ */
+export async function getProfile() {
+  try {
+    const active = await getActiveUser();
+    if (active == null) {
+      return null;
+    }
+    const raw = await readProfileRawForUser(active);
+    return normalizeProfileRow(raw, active);
+  } catch (e) {
+    console.error("getProfile", e);
+    return null;
+  }
+}
+
+/**
+ * @param {{ name?: string, username?: string, profileImage?: string | null }} partial
+ * @returns {Promise<boolean>}
+ */
+export async function saveProfile(partial) {
+  try {
+    const active = await getActiveUser();
+    if (active == null) {
+      return false;
+    }
+    const current = normalizeProfileRow(
+      await readProfileRawForUser(active),
+      active,
+    );
+    const next = {
+      name: current.name,
+      username: active,
+      profileImage: current.profileImage,
+    };
+    if (partial && typeof partial === "object") {
+      if (Object.prototype.hasOwnProperty.call(partial, "name")) {
+        const nameNext = String(partial.name ?? "").trim();
+        if (nameNext.length === 0) {
+          return false;
+        }
+        next.name = nameNext;
+      }
+      if (Object.prototype.hasOwnProperty.call(partial, "profileImage")) {
+        const pi = partial.profileImage;
+        next.profileImage =
+          pi != null && String(pi).trim() !== "" ? String(pi).trim() : null;
+      }
+    }
+    next.username = active;
+    return await writeProfileObjectForUser(active, next);
+  } catch (e) {
+    console.error("saveProfile", e);
+    return false;
+  }
 }
 
 /**
