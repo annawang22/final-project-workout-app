@@ -6,25 +6,23 @@
  *    - If tap #2 arrives before timeout, timer is cancelled and we navigate (double tap).
  *    - If no second tap arrives, timer fires and we expand/collapse only that row.
  *
- * 2) Swipe isolation from taps:
- *    - We track touch start/end coordinates per row press.
- *    - If horizontal movement crosses the right-swipe threshold (and dominates vertical),
- *      we toggle activation and mark that touch sequence as "swipe consumed".
- *    - Consumed swipe blocks tap handling for that release, so swipe does not trigger
- *      single-tap expansion or double-tap navigation.
+ * 2) Swipe isolation from taps / scroll:
+ *    - Full-row swipe uses RNGH Gesture.Pan with activeOffsetX + failOffsetY so horizontal
+ *      intent can claim the gesture before FlatList scroll eats the touch.
+ *    - onStart marks swipe-consumed so the row Pressable does not treat the sequence as a tap.
+ *    - If pan never activates, tap/double-tap/long-press behave as before.
  *
  * 3) Long press edit isolation:
  *    - Long press clears pending single-tap timer to avoid accidental expand/navigation
  *      when the user intended to edit.
  */
 
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
-  type GestureResponderEvent,
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -34,6 +32,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { GoalsStackParamList } from "../navigation/goalsStackTypes";
@@ -41,7 +40,7 @@ import {
   addGoal,
   deleteGoal,
   getGoals,
-  toggleGoalActiveOnHome,
+  setGoalActiveOnHome,
   updateGoalText,
 } from "../utils/storage";
 
@@ -108,13 +107,180 @@ function exercisePreviewKey(raw: unknown, index: number): string {
   return `ex-preview-${index}`;
 }
 
+const SWIPE_MAX = 72;
+const COMMIT_AT = SWIPE_MAX * 0.32;
+const FLICK_VEL = 420;
+const FLICK_MIN_DX = 12;
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function GoalSwipeRow({
+  goal,
+  isExpanded,
+  onTap,
+  onLongPress,
+  onCommit,
+}: {
+  goal: Goal;
+  isExpanded: boolean;
+  onTap: () => void;
+  onLongPress: () => void;
+  onCommit: (next: boolean) => Promise<void>;
+}) {
+  const txAnim = useRef(new Animated.Value(0)).current;
+  const panningRef = useRef(false);
+  const consumedTapRef = useRef(false);
+  const activeRef = useRef(goal.isActiveOnHome);
+  const pendingRef = useRef(false);
+  const exList = Array.isArray(goal.exercises) ? goal.exercises : [];
+
+  useEffect(() => {
+    activeRef.current = goal.isActiveOnHome;
+  }, [goal.isActiveOnHome]);
+
+  const markSwipeBegan = useCallback(() => {
+    consumedTapRef.current = true;
+    panningRef.current = true;
+  }, []);
+
+  const markSwipeEnded = useCallback(() => {
+    panningRef.current = false;
+    setTimeout(() => {
+      consumedTapRef.current = false;
+    }, 280);
+  }, []);
+
+  const springCardClosed = useCallback(() => {
+    Animated.spring(txAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      speed: 24,
+      bounciness: 6,
+    }).start();
+  }, [txAnim]);
+
+  const tryCommitToggle = useCallback(() => {
+    if (pendingRef.current) {
+      return;
+    }
+    pendingRef.current = true;
+    const next = !activeRef.current;
+    void Promise.resolve(onCommit(next)).finally(() => {
+      pendingRef.current = false;
+    });
+  }, [onCommit]);
+
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetX([-14, 14])
+        .failOffsetY([-22, 22])
+        .onStart(() => {
+          markSwipeBegan();
+        })
+        .onUpdate((e) => {
+          const x = clamp(e.translationX, 0, SWIPE_MAX);
+          txAnim.setValue(x);
+        })
+        .onEnd((e, success) => {
+          if (!success) {
+            return;
+          }
+          const at = clamp(e.translationX, 0, SWIPE_MAX);
+          const passed =
+            at >= COMMIT_AT ||
+            (e.velocityX > FLICK_VEL && at >= FLICK_MIN_DX);
+          if (passed) {
+            tryCommitToggle();
+          }
+        })
+        .onFinalize(() => {
+          springCardClosed();
+          markSwipeEnded();
+        }),
+    [
+      markSwipeBegan,
+      markSwipeEnded,
+      springCardClosed,
+      tryCommitToggle,
+      txAnim,
+    ],
+  );
+
+  return (
+    <View style={styles.rowOuter}>
+      <View
+        style={[
+          styles.swipeTrack,
+          goal.isActiveOnHome ? styles.swipeTrackActive : styles.swipeTrackInactive,
+        ]}
+      >
+        <Text
+          style={[
+            styles.swipeTrackLabel,
+            goal.isActiveOnHome
+              ? styles.swipeTrackLabelActive
+              : styles.swipeTrackLabelInactive,
+          ]}
+        >
+          {goal.isActiveOnHome ? "Active" : "Swipe to activate"}
+        </Text>
+      </View>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View
+          style={[styles.rowCard, { transform: [{ translateX: txAnim }] }]}
+        >
+        <Pressable
+          onPress={() => {
+            if (consumedTapRef.current) {
+              return;
+            }
+            onTap();
+          }}
+          onLongPress={() => {
+            if (panningRef.current || consumedTapRef.current) {
+              return;
+            }
+            onLongPress();
+          }}
+          style={({ pressed }) => [
+            styles.rowMain,
+            goal.isActiveOnHome && styles.rowActive,
+            pressed && styles.rowPressed,
+          ]}
+        >
+          <View style={styles.rowTop}>
+            <Text style={styles.rowText}>{goal.text}</Text>
+            {goal.isActiveOnHome ? <Text style={styles.activeBadge}>Active</Text> : null}
+          </View>
+          {isExpanded ? (
+            <View style={styles.previewBox}>
+              {exList.length === 0 ? (
+                <Text style={styles.previewHint}>No exercises yet</Text>
+              ) : (
+                exList.map((raw, idx) => (
+                  <Text key={exercisePreviewKey(raw, idx)} style={styles.previewLine}>
+                    • {formatExercisePreviewLine(raw)}
+                  </Text>
+                ))
+              )}
+            </View>
+          ) : null}
+        </Pressable>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
+
 export default function GoalsScreen() {
   const navigation = useNavigation<GoalsNav>();
   const insets = useSafeAreaInsets();
 
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartRef = useRef<{ goalId: string; x: number; y: number } | null>(null);
-  const swipeConsumedRef = useRef<Set<string>>(new Set());
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -172,62 +338,19 @@ export default function GoalsScreen() {
     [navigation],
   );
 
-  const handleRowPressIn = useCallback((goalId: string, e: GestureResponderEvent) => {
-    touchStartRef.current = {
-      goalId,
-      x: e.nativeEvent.pageX,
-      y: e.nativeEvent.pageY,
-    };
-  }, []);
-
-  const handleSwipeToggle = useCallback(
-    async (goalId: string) => {
-      let optimistic: boolean | null = null;
+  const handleSwipeCommit = useCallback(
+    async (goalId: string, nextActive: boolean) => {
       setGoals((prev) =>
-        prev.map((g) => {
-          if (g.id !== goalId) {
-            return g;
-          }
-          optimistic = !g.isActiveOnHome;
-          return { ...g, isActiveOnHome: optimistic };
-        }),
+        prev.map((g) =>
+          g.id === goalId ? { ...g, isActiveOnHome: nextActive } : g,
+        ),
       );
-      const persisted = await toggleGoalActiveOnHome(goalId);
-      if (persisted == null) {
+      const ok = await setGoalActiveOnHome(goalId, nextActive);
+      if (!ok) {
         await loadGoals();
-        return;
       }
-      setGoals((prev) =>
-        prev.map((g) => (g.id === goalId ? { ...g, isActiveOnHome: persisted } : g)),
-      );
     },
     [loadGoals],
-  );
-
-  const handleRowPressOut = useCallback(
-    (goalId: string, e: GestureResponderEvent) => {
-      const start = touchStartRef.current;
-      touchStartRef.current = null;
-      if (!start || start.goalId !== goalId) {
-        return;
-      }
-      const dx = e.nativeEvent.pageX - start.x;
-      const dy = Math.abs(e.nativeEvent.pageY - start.y);
-      const isRightSwipe = dx > 48 && dx > dy + 12;
-      if (!isRightSwipe) {
-        return;
-      }
-      if (tapTimerRef.current) {
-        clearTimeout(tapTimerRef.current);
-        tapTimerRef.current = null;
-      }
-      swipeConsumedRef.current.add(goalId);
-      setTimeout(() => {
-        swipeConsumedRef.current.delete(goalId);
-      }, 500);
-      void handleSwipeToggle(goalId);
-    },
-    [handleSwipeToggle],
   );
 
   const openAdd = useCallback(() => {
@@ -327,48 +450,20 @@ export default function GoalsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const exList = Array.isArray(item.exercises) ? item.exercises : [];
             return (
-              <Pressable
-                onPress={() => {
-                  if (swipeConsumedRef.current.has(item.id)) {
-                    swipeConsumedRef.current.delete(item.id);
-                    return;
-                  }
-                  handleRowPress(item);
-                }}
-                onPressIn={(e) => handleRowPressIn(item.id, e)}
-                onPressOut={(e) => handleRowPressOut(item.id, e)}
+              <GoalSwipeRow
+                goal={item}
+                isExpanded={expandedGoalIds.has(item.id)}
+                onTap={() => handleRowPress(item)}
                 onLongPress={() => openEdit(item)}
-                style={({ pressed }) => [
-                  styles.row,
-                  item.isActiveOnHome && styles.rowActive,
-                  pressed && styles.rowPressed,
-                ]}
-              >
-                <View style={styles.rowTop}>
-                  <Text style={styles.rowText}>{item.text}</Text>
-                  {item.isActiveOnHome ? (
-                    <Text style={styles.activeBadge}>Active</Text>
-                  ) : null}
-                </View>
-                {expandedGoalIds.has(item.id) ? (
-                  <View style={styles.previewBox}>
-                    {exList.length === 0 ? (
-                      <Text style={styles.previewHint}>No exercises yet</Text>
-                    ) : (
-                      exList.map((raw, idx) => (
-                        <Text
-                          key={exercisePreviewKey(raw, idx)}
-                          style={styles.previewLine}
-                        >
-                          • {formatExercisePreviewLine(raw)}
-                        </Text>
-                      ))
-                    )}
-                  </View>
-                ) : null}
-              </Pressable>
+                onCommit={async (next) => {
+                  if (tapTimerRef.current) {
+                    clearTimeout(tapTimerRef.current);
+                    tapTimerRef.current = null;
+                  }
+                  await handleSwipeCommit(item.id, next);
+                }}
+              />
             );
           }}
         />
@@ -470,11 +565,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#333",
   },
-  row: {
+  rowOuter: {
+    marginBottom: 10,
+  },
+  swipeTrack: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 10,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  swipeTrackActive: {
+    backgroundColor: "#cde6ff",
+  },
+  swipeTrackInactive: {
+    backgroundColor: "#edf2f6",
+  },
+  swipeTrackLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  swipeTrackLabelActive: {
+    color: "#0a66c2",
+    textAlign: "right",
+  },
+  swipeTrackLabelInactive: {
+    color: "#6c7785",
+    textAlign: "right",
+  },
+  rowCard: {
+    borderRadius: 10,
+  },
+  rowMain: {
+    backgroundColor: "#fff",
     paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#d9d9d9",
+    borderRadius: 10,
   },
   rowTop: {
     flexDirection: "row",
