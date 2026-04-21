@@ -4,6 +4,9 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useCallback, useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,11 +40,15 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 export default function ProfileScreen({ navigation }: Props) {
   const [overrideInput, setOverrideInput] = useState("");
   const [, bump] = useState(0);
-  const [nameInput, setNameInput] = useState("Your Name");
-  const [nameError, setNameError] = useState<string | null>(null);
+  /** Display name shown in Welcome + Name row (editable via modal). */
+  const [displayName, setDisplayName] = useState("Your Name");
   const [username, setUsername] = useState<string | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [nameModalOpen, setNameModalOpen] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [modalNameError, setModalNameError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     void (async () => {
@@ -49,11 +56,11 @@ export default function ProfileScreen({ navigation }: Props) {
       const active = await getActiveUser();
       const p = await getProfile();
       if (p) {
-        setNameInput(p.name);
+        setDisplayName(p.name);
         setUsername(p.username);
         setImageUri(p.profileImage);
       } else {
-        setNameInput("Your Name");
+        setDisplayName("Your Name");
         setUsername(active);
         setImageUri(null);
       }
@@ -77,24 +84,36 @@ export default function ProfileScreen({ navigation }: Props) {
     }
   }
 
-  async function handleSaveName() {
-    const t = nameInput.trim();
+  function openNameModal() {
+    setDraftName(displayName);
+    setModalNameError(null);
+    setNameModalOpen(true);
+  }
+
+  function closeNameModal() {
+    setNameModalOpen(false);
+    setModalNameError(null);
+  }
+
+  async function confirmNameModal() {
+    const t = draftName.trim();
     if (t.length === 0) {
-      setNameError("Name cannot be empty.");
+      setModalNameError("Name cannot be empty.");
       return;
     }
-    setNameError(null);
+    setModalNameError(null);
     setSaving(true);
     const ok = await saveProfile({ name: t });
     setSaving(false);
     if (ok) {
+      setDisplayName(t);
+      closeNameModal();
       return;
     }
-    setNameError("Could not save. Try again.");
+    setModalNameError("Could not save. Try again.");
   }
 
   async function pickProfileImage() {
-    setNameError(null);
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       return;
@@ -140,105 +159,142 @@ export default function ProfileScreen({ navigation }: Props) {
     load();
   }
 
-  const welcomeUser = username ?? "(signed in)";
+  const usernameLine = username ?? "(signed in)";
   const effective = formatDateYMD(getEffectiveToday());
   const cached = getDebugDateOverrideCached();
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scroll}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.welcome}>Welcome {welcomeUser}</Text>
+    <>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.welcome}>Welcome {displayName}</Text>
 
-      <View style={styles.avatarWrap}>
-        {imageUri ? (
-          <Image
-            source={{ uri: imageUri }}
-            style={styles.avatarImg}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
-            <Text style={styles.avatarPlaceholderText}>?</Text>
-          </View>
-        )}
-        <Pressable
-          style={styles.secondaryBtn}
-          onPress={() => void pickProfileImage()}
-          disabled={saving}
-        >
-          <Text style={styles.secondaryBtnText}>Choose profile picture</Text>
-        </Pressable>
-        {imageUri ? (
-          <Pressable onPress={() => void clearProfileImage()} disabled={saving}>
-            <Text style={styles.removePhoto}>Remove photo</Text>
+        <View style={styles.avatarWrap}>
+          {imageUri ? (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.avatarImg}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarPlaceholderText}>?</Text>
+            </View>
+          )}
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() => void pickProfileImage()}
+            disabled={saving}
+          >
+            <Text style={styles.secondaryBtnText}>Choose profile picture</Text>
           </Pressable>
-        ) : null}
-      </View>
+          {imageUri ? (
+            <Pressable onPress={() => void clearProfileImage()} disabled={saving}>
+              <Text style={styles.removePhoto}>Remove photo</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
-      <Text style={styles.fieldLabel}>Name</Text>
-      <TextInput
-        style={styles.input}
-        value={nameInput}
-        onChangeText={(t) => {
-          setNameInput(t);
-          setNameError(null);
-        }}
-        placeholder="Your Name"
-        editable={!saving}
-      />
-      {nameError ? <Text style={styles.fieldError}>{nameError}</Text> : null}
-      <Pressable
-        style={[styles.primaryBtn, saving && styles.primaryBtnDisabled]}
-        onPress={() => void handleSaveName()}
-        disabled={saving}
-      >
-        <Text style={styles.primaryBtnText}>Save name</Text>
-      </Pressable>
+        <View style={styles.labelRow}>
+          <Text style={styles.fieldLabel}>Name</Text>
+          <Pressable onPress={openNameModal} hitSlop={8}>
+            <Text style={styles.editLink}>Edit</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.readonlyValue}>{displayName}</Text>
 
-      <Text style={styles.fieldLabel}>Username</Text>
-      <Text style={styles.readonlyValue}>{welcomeUser}</Text>
+        <Text style={styles.fieldLabel}>Username</Text>
+        <Text style={styles.readonlyValue}>{usernameLine}</Text>
 
-      <Pressable
-        style={styles.logbookBtn}
-        onPress={() => navigation.navigate("Logbook")}
-      >
-        <Text style={styles.logbookBtnText}>Logbook</Text>
-      </Pressable>
-
-      <Pressable style={styles.logoutBtn} onPress={() => void handleLogout()}>
-        <Text style={styles.logoutLabel}>Log out</Text>
-      </Pressable>
-
-      {/* DEBUG ONLY: lets QA set a fake “today” for repeat rules without changing OS date. */}
-      <View style={styles.debugSection}>
-        <Text style={styles.debugHeading}>DEBUG (TEMPORARY)</Text>
-        <Text style={styles.debugLine}>Current App Date: {effective}</Text>
-        <Text style={styles.debugSub}>
-          Override stored: {cached ?? "(none — using real calendar)"}
-        </Text>
-        <TextInput
-          style={styles.input}
-          value={overrideInput}
-          onChangeText={setOverrideInput}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor="#999"
-        />
         <Pressable
-          style={styles.debugBtn}
-          onPress={() => void handleSetOverride()}
+          style={styles.logbookBtn}
+          onPress={() => navigation.navigate("Logbook")}
         >
-          <Text style={styles.debugBtnText}>Set override date</Text>
+          <Text style={styles.logbookBtnText}>Logbook</Text>
         </Pressable>
-        <Pressable
-          style={styles.debugBtnSecondary}
-          onPress={() => void handleClearOverride()}
+
+        <Pressable style={styles.logoutBtn} onPress={() => void handleLogout()}>
+          <Text style={styles.logoutLabel}>Log out</Text>
+        </Pressable>
+
+        {/* DEBUG ONLY: lets QA set a fake “today” for repeat rules without changing OS date. */}
+        <View style={styles.debugSection}>
+          <Text style={styles.debugHeading}>DEBUG (TEMPORARY)</Text>
+          <Text style={styles.debugLine}>Current App Date: {effective}</Text>
+          <Text style={styles.debugSub}>
+            Override stored: {cached ?? "(none — using real calendar)"}
+          </Text>
+          <TextInput
+            style={styles.input}
+            value={overrideInput}
+            onChangeText={setOverrideInput}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#999"
+          />
+          <Pressable
+            style={styles.debugBtn}
+            onPress={() => void handleSetOverride()}
+          >
+            <Text style={styles.debugBtnText}>Set override date</Text>
+          </Pressable>
+          <Pressable
+            style={styles.debugBtnSecondary}
+            onPress={() => void handleClearOverride()}
+          >
+            <Text style={styles.debugBtnSecondaryText}>Clear override</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      <Modal
+        visible={nameModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={closeNameModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.modalBackdrop}
         >
-          <Text style={styles.debugBtnSecondaryText}>Clear override</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+          <Pressable style={styles.modalBackdropInner} onPress={closeNameModal}>
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={styles.modalCard}
+            >
+              <Text style={styles.modalTitle}>Edit name</Text>
+              <TextInput
+                style={styles.input}
+                value={draftName}
+                onChangeText={(t) => {
+                  setDraftName(t);
+                  setModalNameError(null);
+                }}
+                placeholder="Your Name"
+                autoFocus
+                editable={!saving}
+              />
+              {modalNameError ? (
+                <Text style={styles.fieldError}>{modalNameError}</Text>
+              ) : null}
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeNameModal} disabled={saving}>
+                  <Text style={styles.modalCancel}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSave, saving && styles.primaryBtnDisabled]}
+                  onPress={() => void confirmNameModal()}
+                  disabled={saving}
+                >
+                  <Text style={styles.modalSaveText}>Save</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
   );
 }
 
@@ -266,11 +322,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarPlaceholderText: { fontSize: 40, color: "#999" },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
   fieldLabel: {
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 6,
     color: "#333",
+  },
+  editLink: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#06c",
   },
   input: {
     borderWidth: 1,
@@ -286,16 +352,6 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 16,
   },
-  primaryBtn: {
-    alignSelf: "flex-start",
-    backgroundColor: "#222",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 24,
-  },
-  primaryBtnDisabled: { opacity: 0.5 },
-  primaryBtnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   secondaryBtn: {
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -359,4 +415,45 @@ const styles = StyleSheet.create({
     borderColor: "#888",
   },
   debugBtnSecondaryText: { fontSize: 16 },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalBackdropInner: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 8,
+  },
+  modalCancel: {
+    fontSize: 16,
+    color: "#06c",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  modalSave: {
+    backgroundColor: "#222",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  modalSaveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  primaryBtnDisabled: { opacity: 0.5 },
 });

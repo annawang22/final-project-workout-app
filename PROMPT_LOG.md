@@ -1291,4 +1291,6 @@ sees none of User A’s data
 User B creates their own data
 Switch back → User A data intact
 
-36) 
+36) very good job. i just want to make some slight modifications with the UI design on the profile page. currently, the top says "Welcome username" but i want it to say "Welcome name". To be more specific, i want it to be the name that the user can edit. furthering this, i don't want the save name button to be out in the open and i don't want to just be able to click to edit the name. i want there to be name shown like how the username is shown and then an edit button. when the user clicks the edit button, it leads them to a pop-up that allows them to change their name, hence save or cancel. repeat back to me what i want you to implement. don't implement anything until i agree with your interpretation and prompt you to do so.
+37) yes that is exactly correct. please tell me your approach on how to implement this. once i give you confirmation after, i will ask you to actually do implementation.
+38) sounds good. please proceed with implementation.
