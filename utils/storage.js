@@ -449,6 +449,68 @@ export async function updateGoalText(id, text) {
 }
 
 /**
+ * Set one goal's activation flag for Home without touching its exercises.
+ * @param {string} id
+ * @param {boolean} isActiveOnHome
+ * @returns {Promise<boolean>}
+ */
+export async function setGoalActiveOnHome(id, isActiveOnHome) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return false;
+    }
+    const goals = await readGoalsFromStorage();
+    const idx = goals.findIndex((g) => g.id === id);
+    if (idx < 0) {
+      return false;
+    }
+    const prev = goals[idx];
+    goals[idx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: prev.exercises,
+      isActiveOnHome: Boolean(isActiveOnHome),
+    };
+    await writeGoalsToStorage(goals);
+    return true;
+  } catch (e) {
+    console.error("setGoalActiveOnHome", e);
+    return false;
+  }
+}
+
+/**
+ * Toggle one goal's activation flag for Home without mutating exercises.
+ * @param {string} id
+ * @returns {Promise<boolean | null>} new state, or null if goal not found/error
+ */
+export async function toggleGoalActiveOnHome(id) {
+  try {
+    if ((await getActiveUser()) == null) {
+      return null;
+    }
+    const goals = await readGoalsFromStorage();
+    const idx = goals.findIndex((g) => g.id === id);
+    if (idx < 0) {
+      return null;
+    }
+    const prev = goals[idx];
+    const nextActive = !Boolean(prev.isActiveOnHome);
+    goals[idx] = {
+      id: prev.id,
+      text: prev.text,
+      exercises: prev.exercises,
+      isActiveOnHome: nextActive,
+    };
+    await writeGoalsToStorage(goals);
+    return nextActive;
+  } catch (e) {
+    console.error("toggleGoalActiveOnHome", e);
+    return null;
+  }
+}
+
+/**
  * @param {string} id
  * @returns {Promise<boolean>}
  */

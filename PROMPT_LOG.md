@@ -478,3 +478,157 @@ Switch back → User A data intact
 
 19) ok so i see some initial problems: when i click on repeat, i don't see any popup to toggle the repeat. do you understand what the problem is? explain to me what the problem is. if i agree, i will allow you to fix it.
 20) sounds good. please fix this. and then tell me what you changed
+
+## RETURNED TO CHATGPT PRO
+9) please write my phase 5 prompt. 
+
+## RETURNED TO CURSOR PRO (AGENT)
+21) Phase 4 is complete and verified. We are now starting Phase 5.
+Read SPEC.md and review the Phase 5 section in full before writing any code.
+Your job is to complete every task in Phase 5 and verify every item in the "Done When" checklist before stopping. Do not start Phase 6.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. User Data Isolation (MANDATORY)
+All goal and exercise data must remain scoped per user
+Continue using user-specific storage keys (e.g., goals_<username>)
+No cross-user data access under any condition
+
+2. Gesture Stability (HIGH RISK AREA)
+You now have three gestures on the same goal row:
+Single tap → expand/collapse dropdown
+Double tap → navigate to Goal Detail
+Swipe right → toggle activation
+⚠️ These must NOT conflict.
+You must:
+Add a clear comment block in the Goals screen explaining:
+how gesture conflicts are prevented
+how single vs double tap is distinguished
+how swipe is isolated from taps
+Do not skip this — this is a major failure point.
+
+3. Do NOT Build Full Home Screen Yet
+You are only wiring activation behavior and data flow
+Do NOT build full Home UI yet
+Do NOT implement full repeat filtering logic yet
+
+Build the following:
+
+1. Goal Activation (Swipe Right)
+Implement:
+Swipe right on a goal row toggles:
+isActiveOnHome: true / false
+
+
+Behavior:
+First swipe → set true
+Second swipe → set false
+Requirements:
+Must update immediately in UI (visual feedback)
+Must persist to AsyncStorage
+Must use user-scoped storage
+
+2. Visual Feedback for Activation
+You must clearly indicate when a goal is active.
+Examples (choose one simple approach):
+background highlight
+badge (e.g., "Active")
+icon change
+⚠️ Keep it simple — no overdesign
+
+3. Activation Data Integrity
+Activation must NOT:
+modify exercises
+duplicate exercises
+delete anything
+It only controls whether a goal’s exercises are eligible for Home
+
+4. Home Data Preparation (NO FULL UI)
+You must implement a helper function (in a utility file, not UI) that:
+Retrieves all goals for the current user
+Filters:
+only goals where isActiveOnHome === true
+Returns a flat list of exercises
+Example concept:
+getActiveGoalExercises(username)
+
+⚠️ This is data logic only, not UI
+
+5. Respect Repeat Structure (BUT DO NOT FULLY APPLY IT YET)
+If an exercise has:
+repeat = null
+→ treat as always eligible
+If repeat !== null:
+Do NOT fully filter by date yet
+But structure your helper so it is ready to support repeat filtering in Phase 6
+Use:
+getEffectiveToday()
+(from Phase 4)
+
+6. Dropdown Behavior Must Still Work
+Single tap dropdown must:
+still expand/collapse correctly
+still show exercises in saved order
+remain read-only
+not break after activation toggling
+
+7. No Gesture Conflicts
+You must ensure:
+Single tap does NOT trigger double tap
+Double tap does NOT trigger single tap expansion
+Swipe does NOT trigger tap events
+If needed:
+use timing thresholds for double tap
+isolate gesture responders
+
+8. Persistence Requirements
+Activation state must:
+persist after killing and reopening the app
+remain tied to the correct user
+Switching users must show correct activation state per user
+
+When you are done:
+Go through the Phase 5 "Done When" checklist in SPEC.md and confirm each item passes.
+Then stop and tell me:
+What you built
+Any decisions you made that weren’t specified
+How you prevented gesture conflicts
+How you structured the activation → Home data flow
+Anything that needs my input before Phase 6
+
+Do not start Phase 6.
+
+I will run these kill-and-reopen tests:
+Core Gesture Tests
+Single tap → expands/collapses correctly
+Double tap → navigates correctly
+Swipe right → toggles activation
+Gesture Conflict Tests
+Single tap does NOT trigger navigation
+Double tap does NOT expand dropdown
+Swipe does NOT trigger tap behavior
+
+Activation Tests
+Swipe → goal becomes active (visual feedback)
+Swipe again → deactivates
+Kill app → reopen → state persists
+
+Data Integrity Tests
+Activating goal does NOT duplicate exercises
+Deactivating goal does NOT delete exercises
+Dropdown still shows correct exercises
+
+Helper Function Tests (Important)
+Active goals → exercises returned correctly
+Inactive goals → not included
+No crashes if:
+no goals exist
+goals have no exercises
+repeat is null or present
+
+🔐 Multi-User Isolation Tests
+User A activates goals → log out
+User B logs in → should see NO activation state from User A
+User B activates different goals
+Switch back to User A → original state preserved
+
+22) 

@@ -1,17 +1,21 @@
 /**
- * Goals list gestures (Phase 3–5):
+ * Goals list gesture-conflict rules (Phase 5):
  *
- * Conflict prevention — single tap vs double tap:
- * - First tap starts a short timer (~280ms). If a second tap arrives before the timer
- *   fires, we treat it as a double tap: cancel the timer and navigate to Goal Detail.
- * - If the timer fires with no second tap, we treat it as a single tap: toggle only
- *   that goal’s inline exercise preview. Multiple goals may stay expanded; another
- *   row’s tap does not collapse others—only tapping the same goal again collapses it.
- * - Long press is handled separately and clears any pending single-tap timer so we
- *   don’t expand/collapse or navigate after the user intended to open the goal edit modal.
+ * 1) Single tap vs double tap:
+ *    - Tap #1 starts a short timer (~280ms).
+ *    - If tap #2 arrives before timeout, timer is cancelled and we navigate (double tap).
+ *    - If no second tap arrives, timer fires and we expand/collapse only that row.
  *
- * Phase 5 (not implemented yet):
- * - Swipe right → toggle isActiveOnHome
+ * 2) Swipe isolation from taps:
+ *    - We track touch start/end coordinates per row press.
+ *    - If horizontal movement crosses the right-swipe threshold (and dominates vertical),
+ *      we toggle activation and mark that touch sequence as "swipe consumed".
+ *    - Consumed swipe blocks tap handling for that release, so swipe does not trigger
+ *      single-tap expansion or double-tap navigation.
+ *
+ * 3) Long press edit isolation:
+ *    - Long press clears pending single-tap timer to avoid accidental expand/navigation
+ *      when the user intended to edit.
  */
 
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,6 +24,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import {
   ActivityIndicator,
   FlatList,
+  type GestureResponderEvent,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -36,6 +41,7 @@ import {
   addGoal,
   deleteGoal,
   getGoals,
+  toggleGoalActiveOnHome,
   updateGoalText,
 } from "../utils/storage";
 
@@ -107,6 +113,8 @@ export default function GoalsScreen() {
   const insets = useSafeAreaInsets();
 
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<{ goalId: string; x: number; y: number } | null>(null);
+  const swipeConsumedRef = useRef<Set<string>>(new Set());
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -162,6 +170,64 @@ export default function GoalsScreen() {
       }, 280);
     },
     [navigation],
+  );
+
+  const handleRowPressIn = useCallback((goalId: string, e: GestureResponderEvent) => {
+    touchStartRef.current = {
+      goalId,
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+    };
+  }, []);
+
+  const handleSwipeToggle = useCallback(
+    async (goalId: string) => {
+      let optimistic: boolean | null = null;
+      setGoals((prev) =>
+        prev.map((g) => {
+          if (g.id !== goalId) {
+            return g;
+          }
+          optimistic = !g.isActiveOnHome;
+          return { ...g, isActiveOnHome: optimistic };
+        }),
+      );
+      const persisted = await toggleGoalActiveOnHome(goalId);
+      if (persisted == null) {
+        await loadGoals();
+        return;
+      }
+      setGoals((prev) =>
+        prev.map((g) => (g.id === goalId ? { ...g, isActiveOnHome: persisted } : g)),
+      );
+    },
+    [loadGoals],
+  );
+
+  const handleRowPressOut = useCallback(
+    (goalId: string, e: GestureResponderEvent) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (!start || start.goalId !== goalId) {
+        return;
+      }
+      const dx = e.nativeEvent.pageX - start.x;
+      const dy = Math.abs(e.nativeEvent.pageY - start.y);
+      const isRightSwipe = dx > 48 && dx > dy + 12;
+      if (!isRightSwipe) {
+        return;
+      }
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = null;
+      }
+      swipeConsumedRef.current.add(goalId);
+      setTimeout(() => {
+        swipeConsumedRef.current.delete(goalId);
+      }, 500);
+      void handleSwipeToggle(goalId);
+    },
+    [handleSwipeToggle],
   );
 
   const openAdd = useCallback(() => {
@@ -264,14 +330,28 @@ export default function GoalsScreen() {
             const exList = Array.isArray(item.exercises) ? item.exercises : [];
             return (
               <Pressable
-                onPress={() => handleRowPress(item)}
+                onPress={() => {
+                  if (swipeConsumedRef.current.has(item.id)) {
+                    swipeConsumedRef.current.delete(item.id);
+                    return;
+                  }
+                  handleRowPress(item);
+                }}
+                onPressIn={(e) => handleRowPressIn(item.id, e)}
+                onPressOut={(e) => handleRowPressOut(item.id, e)}
                 onLongPress={() => openEdit(item)}
                 style={({ pressed }) => [
                   styles.row,
+                  item.isActiveOnHome && styles.rowActive,
                   pressed && styles.rowPressed,
                 ]}
               >
-                <Text style={styles.rowText}>{item.text}</Text>
+                <View style={styles.rowTop}>
+                  <Text style={styles.rowText}>{item.text}</Text>
+                  {item.isActiveOnHome ? (
+                    <Text style={styles.activeBadge}>Active</Text>
+                  ) : null}
+                </View>
                 {expandedGoalIds.has(item.id) ? (
                   <View style={styles.previewBox}>
                     {exList.length === 0 ? (
@@ -396,11 +476,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#ccc",
   },
+  rowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  rowActive: {
+    backgroundColor: "#e8f4ff",
+  },
   rowPressed: {
     backgroundColor: "#f5f5f5",
   },
   rowText: {
     fontSize: 16,
+  },
+  activeBadge: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0a66c2",
+    borderWidth: 1,
+    borderColor: "#0a66c2",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   previewBox: {
     marginTop: 10,
