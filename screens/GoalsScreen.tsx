@@ -19,7 +19,7 @@
 
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Animated,
@@ -416,20 +416,6 @@ export default function GoalsScreen() {
     setSaveError(null);
   }, [editingGoalId]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={openAdd}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          hitSlop={8}
-        >
-          <Text style={styles.headerBtnText}>+</Text>
-        </Pressable>
-      ),
-    });
-  }, [navigation, openAdd]);
-
   if (!ready) {
     return (
       <View style={styles.loading}>
@@ -448,7 +434,10 @@ export default function GoalsScreen() {
         <FlatList
           data={goals}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: 88 + insets.bottom },
+          ]}
           renderItem={({ item }) => {
             return (
               <GoalSwipeRow
@@ -468,6 +457,19 @@ export default function GoalsScreen() {
           }}
         />
       )}
+
+      <Pressable
+        onPress={openAdd}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: 24 + insets.bottom },
+          pressed && styles.pressed,
+        ]}
+        hitSlop={6}
+        accessibilityLabel="Add goal"
+      >
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
 
       <Modal
         visible={modalVisible}
@@ -644,18 +646,25 @@ const styles = StyleSheet.create({
     color: "#333",
     marginTop: 4,
   },
-  headerBtn: {
-    marginRight: 8,
-    minWidth: 40,
+  fab: {
+    position: "absolute",
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#222",
     alignItems: "center",
     justifyContent: "center",
+    elevation: 4,
   },
-  headerBtnText: {
-    fontSize: 28,
+  fabText: {
+    color: "#fff",
+    fontSize: 32,
+    lineHeight: 36,
     fontWeight: "500",
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
   modalBackdrop: {
     flex: 1,

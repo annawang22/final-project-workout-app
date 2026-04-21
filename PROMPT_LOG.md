@@ -1681,3 +1681,5 @@ This is the final phase. Do not start a new phase.
 45) the issue still remains. however, it seems to me that the lag is faster now? could you explain to me a different approach to fixing this issue?
 46) im on iOS. the flash happens when switching tabs AND when Goals -> Goal detail -> back without leaving Goals. the difference is that switching tabs has a longer lag than Goals -> Goal detail -> back. please go about implementation based on how you see fit.
 47) it's the back label
+48) okay let's take a different approach. i want to move the goal button to the bottom right of the goal screen, so it's just like the home screen and goals details screen. reiterate to me what i just asked you to do, then i will prompt you to implement this.
+49) perfect. okay implement this now.
