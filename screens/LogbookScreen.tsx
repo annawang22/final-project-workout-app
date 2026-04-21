@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type TextStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,7 +22,7 @@ import {
   type HomeExerciseShape,
 } from "../utils/homeDisplay";
 import { getLogbook, undoLogbookExerciseToHome } from "../utils/storage";
-import { SCREEN_HORIZONTAL, SPACING } from "../utils/theme";
+import { SCREEN_HORIZONTAL, SPACING, typography } from "../utils/theme";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Logbook">;
 
@@ -40,19 +41,19 @@ function createLogbookStyles(colors: AppColors) {
     emptyWrap: {
       flex: 1,
       justifyContent: "center",
-      paddingHorizontal: SPACING.lg,
+      paddingHorizontal: SCREEN_HORIZONTAL,
       backgroundColor: colors.background,
     },
     emptyText: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       textAlign: "center",
       color: colors.textSecondary,
     },
     hint: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       color: colors.textSecondary,
-      marginBottom: 12,
-      lineHeight: 18,
+      marginBottom: SPACING.md,
+      lineHeight: SPACING.lg - SPACING.xs,
     },
     sectionHeader: {
       paddingTop: SPACING.md,
@@ -62,49 +63,47 @@ function createLogbookStyles(colors: AppColors) {
       backgroundColor: colors.surface,
     },
     sectionTitle: {
-      fontSize: 17,
-      fontWeight: "700",
+      ...(typography.subheader as TextStyle),
       color: colors.textPrimary,
     },
     sectionYmd: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       color: colors.textMuted,
-      marginTop: 4,
+      marginTop: SPACING.xs,
     },
     row: {
       flexDirection: "row",
-      alignItems: "flex-start",
-      paddingVertical: 12,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      alignItems: "center",
+      paddingVertical: SPACING.md,
       opacity: 0.65,
       backgroundColor: colors.background,
     },
     rowPressed: { opacity: 0.9 },
     checkboxDone: {
-      width: 24,
-      height: 24,
-      borderRadius: 4,
+      width: SPACING.lg,
+      height: SPACING.lg,
+      borderRadius: SPACING.xs,
       borderWidth: 2,
       borderColor: colors.neutralBorder,
-      marginRight: 12,
-      marginTop: 2,
+      marginRight: SPACING.md,
       backgroundColor: colors.card,
       alignItems: "center",
       justifyContent: "center",
     },
     checkboxMark: {
-      fontSize: 12,
-      fontWeight: "700",
+      ...(typography.overline as TextStyle),
       color: colors.textSecondary,
     },
-    rowBody: { flex: 1 },
+    rowBody: { flex: 1, minWidth: 0 },
     rowTitle: {
-      fontSize: 16,
-      fontWeight: "600",
+      ...(typography.subheader as TextStyle),
       color: colors.textPrimary,
     },
-    rowMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+    rowMeta: {
+      ...(typography.body as TextStyle),
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    },
   });
 }
 
@@ -278,7 +277,9 @@ export default function LogbookScreen(_props: Props) {
                 <Text style={styles.checkboxMark}>✓</Text>
               </View>
               <View style={styles.rowBody}>
-                <Text style={styles.rowTitle}>{name}</Text>
+                <Text style={styles.rowTitle} numberOfLines={3}>
+                  {name}
+                </Text>
                 {detail !== "" ? (
                   <Text style={styles.rowMeta}>{detail}</Text>
                 ) : null}

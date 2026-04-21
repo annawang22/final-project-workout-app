@@ -2222,6 +2222,11 @@ Do not start UI Phase 4.
  ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
  ERROR  [ReferenceError: Property 'TYPOGRAPHY' doesn't exist]
 
+## RETURNED TO CURSOR PRO (ASK)
+4) where in my code to control the button for the Logbook screen to return to the profile page?
+5) if i want to change the name = "ProfileMain", where else do i have to change it?
+
+## RETURNED TO CURSOR PRO (AGENT)
 54) I have spotted that when I clicked into the Goal Detail screen the back button says "GoalsList". similarly when I click into the Logbook screen, the back button says "ProfileMain". i don't like this. I just want it to say "Goals" and "Profile" respectively. repeat back to me what i just said to you. if i agree with your interpretation, i will then prompt you to continue.
 55) yes. that is exactly it. fix this and explain to me your approach.
 
@@ -2521,7 +2526,146 @@ Anything that needs my input before UI Phase 6
 Do not start UI Phase 6.
 
 ## RETURNED TO CHATGPT PRO
-25) 
+25) spectacular! please write my final prompt. 
 
 ## RETURNED TO CURSOR PRO (AGENT)
-62) 
+62) UI Phase 5 is complete and verified. We are now starting UI Phase 6.
+Read SPECUIDesign.md and review the remaining UI polish sections before writing any code.
+Your job is to unify the entire app visually and ensure it feels like a single, cohesive product. Do not add new features. Do not start any new phases.
+
+🚨 CRITICAL GLOBAL REQUIREMENTS (APPLY TO EVERYTHING IN THIS PHASE)
+1. NO NEW FEATURES
+Only:
+visual refinement
+consistency fixes
+spacing/alignment cleanup
+Do NOT:
+add new UI components
+change flows
+change logic
+
+2. Preserve Existing Structure
+Keep list-based layouts (no cards)
+Keep navigation as-is
+Keep all behavior unchanged
+This is:
+👉 polish, not redesign
+
+3. Use Theme System Everywhere
+Everything must use:
+theme colors
+SPACING
+TYPOGRAPHY
+No hardcoded values anywhere.
+
+Build the following:
+
+1. Cross-Screen Consistency Pass (MOST IMPORTANT)
+Ensure ALL screens (Home, Goals, Profile) share:
+A. Horizontal Padding
+identical left/right padding
+B. Vertical Rhythm
+consistent spacing between:
+headers
+sections
+list items
+C. Alignment
+all text aligns on the same vertical grid
+no “slightly off” layouts
+
+2. Goals Screen Refinement
+Bring Goals screen to the same visual level as Home:
+Goal Rows
+match spacing style used in Home list
+consistent vertical spacing
+clean alignment
+Expanded Dropdown
+exercises align cleanly under goal
+slight indentation for hierarchy (subtle, not dramatic)
+spacing consistent with Home
+Visual Hierarchy
+goal title = primary text
+exercises = secondary text
+
+3. Profile Screen Refinement
+Make Profile feel like a clean dashboard:
+Layout
+consistent section spacing
+no cramped areas
+Profile Image
+centered or cleanly aligned
+properly sized (not too large, not tiny)
+Text Hierarchy
+name = strong emphasis
+username = secondary
+Buttons (Logbook, Logout)
+evenly spaced
+aligned with rest of layout
+
+4. Typography Consistency Audit
+Verify across entire app:
+headers use TYPOGRAPHY.header
+primary text uses subheader or body appropriately
+secondary text uses textSecondary
+no random font sizes remain
+
+5. Spacing System Enforcement
+Remove ALL inconsistent spacing.
+Replace anything like:
+marginTop: 13
+paddingBottom: 21
+
+with:
+marginTop: SPACING.md
+paddingBottom: SPACING.lg
+
+Goal:
+👉 everything snaps to a clean spacing system
+
+6. Visual Balance & Breathing Room
+Ensure:
+no screen feels cramped
+no excessive empty space
+spacing feels intentional
+You may:
+slightly increase spacing where needed
+slightly reduce where overcrowded
+
+7. Dark Mode Final Pass
+Verify across ALL screens:
+no unreadable text
+no invisible elements
+consistent contrast
+no mismatched light/dark components
+
+8. Interaction Polish (Light Touch Only)
+Ensure:
+touch areas are not cramped
+buttons are easy to tap
+scrolling feels natural
+Do NOT:
+add animations
+change interaction logic
+
+9. Remove Visual Inconsistencies
+Fix:
+misaligned text
+inconsistent font weights
+uneven spacing
+leftover debug styling
+
+10. Final Cleanup
+remove unused styles
+remove redundant styling
+ensure all styling is clean and readable
+
+When you are done:
+Go through the final UI checklist and confirm everything is consistent.
+Then stop and tell me:
+What you refined across screens
+What inconsistencies you fixed
+Whether spacing/typography is now unified
+Any design decisions you made
+Whether the app feels cohesive
+
+63) great job. one thing though: on the profile page, i don't like how small welcome is compared to the name...it looks quite odd, could you change this and then explain to me how you did it

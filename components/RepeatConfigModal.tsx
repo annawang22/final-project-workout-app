@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextStyle,
 } from "react-native";
 
 import type { AppColors } from "../context/ThemeContext";
@@ -19,6 +20,7 @@ import {
   getEffectiveToday,
   sanitizeRepeatConfig,
 } from "../utils/storage";
+import { SPACING, typography } from "../utils/theme";
 
 const WEEKDAYS: string[] = [
   "Sunday",
@@ -60,71 +62,91 @@ function createRepeatStyles(colors: AppColors) {
     card: {
       maxHeight: "88%",
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 14,
-      borderTopRightRadius: 14,
-      padding: 16,
+      borderTopLeftRadius: SPACING.sm + SPACING.xs,
+      borderTopRightRadius: SPACING.sm + SPACING.xs,
+      padding: SPACING.md,
     },
     title: {
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 10,
+      ...(typography.modalTitle as TextStyle),
+      marginBottom: SPACING.sm + SPACING.xs,
       color: colors.textPrimary,
     },
     label: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       fontWeight: "600",
-      marginTop: 8,
-      marginBottom: 4,
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.xs,
       color: colors.textPrimary,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      padding: 10,
-      marginBottom: 6,
+      borderRadius: SPACING.sm,
+      padding: SPACING.sm + SPACING.xs,
+      marginBottom: SPACING.sm,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     rowWrap: {
       flexDirection: "row",
       flexWrap: "wrap",
-      marginBottom: 4,
+      marginBottom: SPACING.xs,
     },
-    row: { flexDirection: "row", flexWrap: "wrap", marginBottom: 6 },
+    row: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginBottom: SPACING.sm,
+    },
     chip: {
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-      borderRadius: 8,
+      paddingHorizontal: SPACING.sm + SPACING.xs,
+      paddingVertical: SPACING.sm,
+      borderRadius: SPACING.sm,
       borderWidth: 1,
       borderColor: colors.border,
-      marginRight: 4,
-      marginBottom: 4,
+      marginRight: SPACING.xs,
+      marginBottom: SPACING.xs,
     },
     chipOn: {
       backgroundColor: colors.interactiveStrong,
       borderColor: colors.interactiveStrong,
     },
-    chipText: { fontSize: 13, color: colors.textPrimary },
+    chipText: {
+      ...(typography.caption as TextStyle),
+      color: colors.textPrimary,
+    },
     chipTextOn: { color: colors.onInteractive },
-    linkBtn: { marginBottom: 8 },
-    link: { color: colors.link, fontSize: 16 },
-    error: { color: colors.danger, marginTop: 8 },
-    removeBtn: { marginTop: 12, marginBottom: 8 },
-    removeText: { color: colors.danger, fontSize: 15 },
+    linkBtn: { marginBottom: SPACING.sm },
+    link: {
+      color: colors.link,
+      ...(typography.body as TextStyle),
+    },
+    error: { color: colors.danger, marginTop: SPACING.sm },
+    removeBtn: {
+      marginTop: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    removeText: {
+      color: colors.danger,
+      ...(typography.body as TextStyle),
+    },
     actions: {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
-      marginTop: 12,
+      marginTop: SPACING.md,
     },
-    actionCancel: { marginRight: 16 },
+    actionCancel: { marginRight: SPACING.md },
     primary: {
       backgroundColor: colors.interactiveStrong,
-      paddingHorizontal: 18,
-      paddingVertical: 10,
-      borderRadius: 8,
+      paddingHorizontal: SPACING.md + SPACING.xs,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      borderRadius: SPACING.sm,
     },
-    primaryText: { color: colors.onInteractive, fontWeight: "600" },
+    primaryText: {
+      color: colors.onInteractive,
+      ...(typography.body as TextStyle),
+      fontWeight: "600",
+    },
   });
 }
 

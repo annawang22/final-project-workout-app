@@ -128,6 +128,31 @@ export const typography = {
     fontSize: 16,
     fontWeight: "400",
   },
+  /** Profile display name / short hero line */
+  display: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  /** Secondary lines, exercise previews, meta */
+  caption: {
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  /** Form field labels, small controls */
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  /** Tiny badges / swipe hints */
+  overline: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  /** Sheet titles */
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
 };
 
 export const TAB_BAR = {
@@ -139,6 +164,8 @@ export const TAB_BAR = {
 export const CONTENT_BOTTOM = {
   homeList: SPACING.xl * 3 + SPACING.xs,
   goalsList: SPACING.xl * 2 + SPACING.lg,
+  /** Goal detail exercise list + FAB */
+  goalDetailList: SPACING.xl * 2 + SPACING.lg,
 };
 
 export const DARK_MODE_STORAGE_KEY = "app_ui_dark_mode_v1";
@@ -176,43 +203,42 @@ export function createAuthFormStyles(colors) {
       justifyContent: "center",
     },
     label: {
-      marginBottom: 6,
-      fontSize: 14,
-      fontWeight: "600",
+      marginBottom: SPACING.sm,
+      ...typography.label,
       color: colors.textPrimary,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 16,
-      fontSize: 16,
+      borderRadius: SPACING.sm,
+      paddingHorizontal: SPACING.md - SPACING.xs,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      marginBottom: SPACING.md,
+      ...typography.body,
       color: colors.textPrimary,
     },
     error: {
       color: colors.danger,
-      marginBottom: 12,
+      marginBottom: SPACING.md,
     },
     primaryBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 14,
-      borderRadius: 8,
+      paddingVertical: SPACING.md - SPACING.xs,
+      borderRadius: SPACING.sm,
       alignItems: "center",
     },
     primaryBtnText: {
       color: colors.onInteractive,
-      fontSize: 16,
+      ...typography.body,
       fontWeight: "600",
     },
     linkWrap: {
-      marginTop: 16,
+      marginTop: SPACING.md,
       alignItems: "center",
     },
     link: {
       color: colors.link,
-      fontSize: 16,
+      ...typography.body,
     },
   });
 }

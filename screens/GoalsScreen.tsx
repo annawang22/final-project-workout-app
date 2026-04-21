@@ -27,16 +27,17 @@ import {
   useState,
 } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextStyle,
 } from "react-native";
 import { FlatList, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -132,6 +133,7 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function createGoalsStyles(colors: AppColors) {
+  const rowRadius = SPACING.sm;
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -141,7 +143,8 @@ function createGoalsStyles(colors: AppColors) {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      minHeight: 120,
+      minHeight: SPACING.xl * 4,
+      backgroundColor: colors.background,
     },
     listContent: {
       paddingHorizontal: SCREEN_HORIZONTAL,
@@ -154,13 +157,13 @@ function createGoalsStyles(colors: AppColors) {
       justifyContent: "center",
     },
     emptyText: {
-      ...typography.body,
-      lineHeight: 24,
+      ...(typography.body as TextStyle),
+      lineHeight: SPACING.lg,
       textAlign: "center",
       color: colors.textSecondary,
     },
     rowOuter: {
-      marginBottom: 10,
+      marginBottom: SPACING.md,
     },
     swipeTrack: {
       position: "absolute",
@@ -168,9 +171,9 @@ function createGoalsStyles(colors: AppColors) {
       right: 0,
       top: 0,
       bottom: 0,
-      borderRadius: 10,
+      borderRadius: rowRadius,
       justifyContent: "center",
-      paddingHorizontal: 12,
+      paddingHorizontal: SPACING.md,
     },
     swipeTrackActive: {
       backgroundColor: colors.goalSwipeActive,
@@ -179,8 +182,7 @@ function createGoalsStyles(colors: AppColors) {
       backgroundColor: colors.goalSwipeInactive,
     },
     swipeTrackLabel: {
-      fontSize: 12,
-      fontWeight: "700",
+      ...(typography.overline as TextStyle),
     },
     swipeTrackLabelActive: {
       color: colors.goalAccent,
@@ -191,15 +193,15 @@ function createGoalsStyles(colors: AppColors) {
       textAlign: "right",
     },
     rowCard: {
-      borderRadius: 10,
+      borderRadius: rowRadius,
     },
     rowMain: {
       backgroundColor: colors.goalRowBg,
-      paddingVertical: 14,
-      paddingHorizontal: 10,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.md,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.goalRowBorder,
-      borderRadius: 10,
+      borderRadius: rowRadius,
     },
     rowTop: {
       flexDirection: "row",
@@ -213,45 +215,48 @@ function createGoalsStyles(colors: AppColors) {
       backgroundColor: colors.goalRowPressed,
     },
     rowText: {
-      fontSize: 16,
+      ...(typography.subheader as TextStyle),
       color: colors.textPrimary,
+      flex: 1,
+      marginRight: SPACING.sm,
     },
     activeBadge: {
-      fontSize: 12,
-      fontWeight: "700",
+      ...(typography.overline as TextStyle),
       color: colors.goalAccent,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.goalAccent,
-      borderRadius: 10,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
+      borderRadius: SPACING.md,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
     },
     previewBox: {
-      marginTop: 10,
-      paddingLeft: 4,
+      marginTop: SPACING.md,
+      paddingLeft: SPACING.md,
+      borderLeftWidth: 2,
+      borderLeftColor: colors.border,
     },
     previewHint: {
-      fontSize: 14,
+      ...(typography.caption as TextStyle),
       color: colors.textSecondary,
     },
     previewLine: {
-      fontSize: 14,
-      color: colors.textPrimary,
-      marginTop: 4,
+      ...(typography.caption as TextStyle),
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
     },
     fab: {
       position: "absolute",
       right: SPACING.md + SPACING.xs,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.interactiveStrong,
+      width: SPACING.xl + SPACING.lg,
+      height: SPACING.xl + SPACING.lg,
+      borderRadius: (SPACING.xl + SPACING.lg) / 2,
+      backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
-      elevation: 4,
+      elevation: SPACING.xs,
     },
     fabText: {
-      color: colors.onInteractive,
+      color: colors.onPrimary,
       fontSize: 32,
       lineHeight: 36,
       fontWeight: "500",
@@ -269,68 +274,67 @@ function createGoalsStyles(colors: AppColors) {
     },
     modalCard: {
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      padding: 20,
+      borderTopLeftRadius: SPACING.sm + SPACING.xs,
+      borderTopRightRadius: SPACING.sm + SPACING.xs,
+      padding: SPACING.lg,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 12,
+      ...(typography.modalTitle as TextStyle),
+      marginBottom: SPACING.md,
       color: colors.textPrimary,
     },
     modalLabel: {
-      fontSize: 14,
-      fontWeight: "600",
-      marginBottom: 6,
+      ...(typography.label as TextStyle),
+      marginBottom: SPACING.sm,
       color: colors.textPrimary,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      minHeight: 80,
+      borderRadius: SPACING.sm,
+      paddingHorizontal: SPACING.md - SPACING.xs,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      minHeight: SPACING.xl * 2 + SPACING.lg,
       textAlignVertical: "top",
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     errorText: {
       color: colors.danger,
-      marginTop: 8,
+      marginTop: SPACING.sm,
     },
     modalActions: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      marginTop: 20,
+      marginTop: SPACING.lg,
     },
     secondaryBtn: {
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      marginRight: 12,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.md,
+      marginRight: SPACING.md,
     },
     secondaryLabel: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.link,
     },
     primaryBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 8,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: SPACING.sm,
     },
     primaryLabel: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.onInteractive,
       fontWeight: "600",
     },
     dangerBtn: {
-      marginTop: 16,
-      paddingVertical: 10,
+      marginTop: SPACING.md,
+      paddingVertical: SPACING.sm + SPACING.xs,
       alignItems: "center",
     },
     dangerLabel: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.danger,
     },
   });
@@ -457,43 +461,50 @@ function GoalSwipeRow({
         <Animated.View
           style={[styles.rowCard, { transform: [{ translateX: txAnim }] }]}
         >
-        <Pressable
-          onPress={() => {
-            if (consumedTapRef.current) {
-              return;
-            }
-            onTap();
-          }}
-          onLongPress={() => {
-            if (panningRef.current || consumedTapRef.current) {
-              return;
-            }
-            onLongPress();
-          }}
-          style={({ pressed }) => [
-            styles.rowMain,
-            goal.isActiveOnHome && styles.rowActive,
-            pressed && styles.rowPressed,
-          ]}
-        >
-          <View style={styles.rowTop}>
-            <Text style={styles.rowText}>{goal.text}</Text>
-            {goal.isActiveOnHome ? <Text style={styles.activeBadge}>Active</Text> : null}
-          </View>
-          {isExpanded ? (
-            <View style={styles.previewBox}>
-              {exList.length === 0 ? (
-                <Text style={styles.previewHint}>No exercises yet</Text>
-              ) : (
-                exList.map((raw, idx) => (
-                  <Text key={exercisePreviewKey(raw, idx)} style={styles.previewLine}>
-                    • {formatExercisePreviewLine(raw)}
-                  </Text>
-                ))
-              )}
+          <Pressable
+            onPress={() => {
+              if (consumedTapRef.current) {
+                return;
+              }
+              onTap();
+            }}
+            onLongPress={() => {
+              if (panningRef.current || consumedTapRef.current) {
+                return;
+              }
+              onLongPress();
+            }}
+            style={({ pressed }) => [
+              styles.rowMain,
+              goal.isActiveOnHome && styles.rowActive,
+              pressed && styles.rowPressed,
+            ]}
+          >
+            <View style={styles.rowTop}>
+              <Text style={styles.rowText} numberOfLines={3}>
+                {goal.text}
+              </Text>
+              {goal.isActiveOnHome ? (
+                <Text style={styles.activeBadge}>Active</Text>
+              ) : null}
             </View>
-          ) : null}
-        </Pressable>
+            {isExpanded ? (
+              <View style={styles.previewBox}>
+                {exList.length === 0 ? (
+                  <Text style={styles.previewHint}>No exercises yet</Text>
+                ) : (
+                  exList.map((raw, idx) => (
+                    <Text
+                      key={exercisePreviewKey(raw, idx)}
+                      style={styles.previewLine}
+                    >
+                      {formatExercisePreviewLine(raw)}
+                    </Text>
+                  ))
+                )}
+              </View>
+            ) : null}
+          </Pressable>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -696,7 +707,7 @@ export default function GoalsScreen() {
           { bottom: SPACING.lg + insets.bottom },
           pressed && styles.pressed,
         ]}
-        hitSlop={6}
+        hitSlop={SPACING.sm}
         accessibilityLabel="Add goal"
       >
         <Text style={styles.fabText}>+</Text>

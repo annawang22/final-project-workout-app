@@ -3,15 +3,16 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextStyle,
 } from "react-native";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -30,7 +31,12 @@ import {
     sanitizeRepeatConfig,
     updateExerciseInGoal,
 } from "../utils/storage";
-import { SPACING } from "../utils/theme";
+import {
+  CONTENT_BOTTOM,
+  SCREEN_HORIZONTAL,
+  SPACING,
+  typography,
+} from "../utils/theme";
 
 export type Exercise = {
   id: string;
@@ -85,45 +91,62 @@ function createDetailStyles(colors: AppColors) {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
+      backgroundColor: colors.background,
     },
     listContainer: { flex: 1 },
+    listContent: {
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingTop: SPACING.sm,
+    },
     emptyWrap: {
       flex: 1,
-      padding: SPACING.lg,
+      paddingHorizontal: SCREEN_HORIZONTAL,
+      paddingVertical: SPACING.lg,
       justifyContent: "center",
     },
     emptyText: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       textAlign: "center",
       color: colors.textSecondary,
     },
     exRow: {
       flexDirection: "row",
       alignItems: "center",
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-      paddingVertical: 10,
-      paddingHorizontal: 8,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: 0,
       backgroundColor: colors.background,
     },
-    dragHandle: { padding: 8, marginRight: 4 },
-    dragIcon: { fontSize: 20, color: colors.textSecondary },
-    exMain: { flex: 1 },
-    exName: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
-    exMeta: { fontSize: 14, color: colors.rowMeta, marginTop: 2 },
+    dragHandle: {
+      padding: SPACING.sm,
+      marginRight: SPACING.xs,
+    },
+    dragIcon: {
+      ...(typography.subheader as TextStyle),
+      color: colors.textSecondary,
+    },
+    exMain: { flex: 1, minWidth: 0 },
+    exName: {
+      ...(typography.subheader as TextStyle),
+      color: colors.textPrimary,
+    },
+    exMeta: {
+      ...(typography.body as TextStyle),
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    },
     fab: {
       position: "absolute",
       right: SPACING.md + SPACING.xs,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.interactiveStrong,
+      width: SPACING.xl + SPACING.lg,
+      height: SPACING.xl + SPACING.lg,
+      borderRadius: (SPACING.xl + SPACING.lg) / 2,
+      backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
-      elevation: 4,
+      elevation: SPACING.xs,
     },
     fabText: {
-      color: colors.onInteractive,
+      color: colors.onPrimary,
       fontSize: 32,
       lineHeight: 36,
       fontWeight: "500",
@@ -137,69 +160,84 @@ function createDetailStyles(colors: AppColors) {
     modalAvoid: { width: "100%" },
     modalCard: {
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 12,
-      padding: 20,
+      borderTopLeftRadius: SPACING.sm + SPACING.xs,
+      borderTopRightRadius: SPACING.sm + SPACING.xs,
+      padding: SPACING.lg,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 12,
+      ...(typography.modalTitle as TextStyle),
+      marginBottom: SPACING.md,
       color: colors.textPrimary,
     },
     label: {
-      fontSize: 14,
-      fontWeight: "600",
-      marginBottom: 4,
+      ...(typography.label as TextStyle),
+      marginBottom: SPACING.xs,
       color: colors.textPrimary,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 10,
+      borderRadius: SPACING.sm,
+      paddingHorizontal: SPACING.md - SPACING.xs,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      marginBottom: SPACING.sm + SPACING.xs,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     row2: { flexDirection: "row" },
-    half: { flex: 1, marginRight: 8 },
+    half: { flex: 1, marginRight: SPACING.sm },
     repeatBtn: {
-      paddingVertical: 10,
-      marginBottom: 2,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      marginBottom: SPACING.xs,
     },
-    repeatLabel: { color: colors.link, fontSize: 16 },
+    repeatLabel: {
+      color: colors.link,
+      ...(typography.body as TextStyle),
+    },
     repeatSummary: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       color: colors.textPrimary,
-      marginBottom: 8,
+      marginBottom: SPACING.sm,
     },
     repeatSummaryMuted: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       color: colors.textMuted,
-      marginBottom: 8,
+      marginBottom: SPACING.sm,
     },
-    errorText: { color: colors.danger, marginBottom: 6 },
+    errorText: {
+      color: colors.danger,
+      marginBottom: SPACING.sm,
+    },
     modalActions: {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
-      marginTop: 8,
+      marginTop: SPACING.sm,
     },
-    link: { color: colors.link, fontSize: 16, marginRight: 20 },
+    link: {
+      color: colors.link,
+      ...(typography.body as TextStyle),
+      marginRight: SPACING.lg,
+    },
     primaryBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 8,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: SPACING.sm,
     },
     primaryLabel: {
       color: colors.onInteractive,
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       fontWeight: "600",
     },
-    dangerBtn: { marginTop: 16, alignItems: "center" },
-    dangerText: { color: colors.danger, fontSize: 16 },
+    dangerBtn: {
+      marginTop: SPACING.md,
+      alignItems: "center",
+    },
+    dangerText: {
+      color: colors.danger,
+      ...(typography.body as TextStyle),
+    },
   });
 }
 
@@ -209,6 +247,7 @@ export default function GoalDetailScreen() {
   const { goalId } = params;
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const listBottomPad = CONTENT_BOTTOM.goalDetailList + insets.bottom;
   const styles = useMemo(() => createDetailStyles(colors), [colors]);
 
   const [ready, setReady] = useState(false);
@@ -373,6 +412,10 @@ export default function GoalDetailScreen() {
             keyExtractor={(item) => item.id}
             onDragEnd={onDragEnd}
             containerStyle={styles.listContainer}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: listBottomPad },
+            ]}
             renderItem={({ item, drag, isActive }) => (
               <ScaleDecorator>
                 <View
@@ -384,7 +427,7 @@ export default function GoalDetailScreen() {
                   <Pressable
                     onLongPress={drag}
                     style={styles.dragHandle}
-                    hitSlop={10}
+                    hitSlop={SPACING.sm}
                     accessibilityLabel="Drag to reorder"
                   >
                     <Text style={styles.dragIcon}>≡</Text>
@@ -413,7 +456,7 @@ export default function GoalDetailScreen() {
             { bottom: SPACING.lg + insets.bottom },
             pressed && styles.pressed,
           ]}
-          hitSlop={6}
+          hitSlop={SPACING.sm}
         >
           <Text style={styles.fabText}>+</Text>
         </Pressable>

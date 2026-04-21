@@ -108,8 +108,7 @@ function createHomeStyles(colors: AppColors) {
       opacity: 0.85,
     },
     rowHint: {
-      ...(typography.body as TextStyle),
-      fontSize: 14,
+      ...(typography.caption as TextStyle),
       color: colors.textMuted,
       marginTop: SPACING.xs,
     },
@@ -128,8 +127,7 @@ function createHomeStyles(colors: AppColors) {
       justifyContent: "center",
     },
     checkboxMark: {
-      fontSize: 14,
-      fontWeight: "700",
+      ...(typography.overline as TextStyle),
       color: colors.interactiveStrong,
     },
     fab: {
@@ -162,14 +160,12 @@ function createHomeStyles(colors: AppColors) {
       padding: SPACING.lg,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: "700",
+      ...(typography.modalTitle as TextStyle),
       marginBottom: SPACING.md,
       color: colors.textPrimary,
     },
     label: {
-      fontSize: 14,
-      fontWeight: "600",
+      ...(typography.label as TextStyle),
       marginBottom: SPACING.xs,
       color: colors.textPrimary,
     },
@@ -180,6 +176,7 @@ function createHomeStyles(colors: AppColors) {
       paddingHorizontal: SPACING.md - SPACING.xs,
       paddingVertical: SPACING.sm + SPACING.xs,
       marginBottom: SPACING.sm + SPACING.xs,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     row2: { flexDirection: "row" },
@@ -196,7 +193,7 @@ function createHomeStyles(colors: AppColors) {
     },
     link: {
       color: colors.link,
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       marginRight: SPACING.lg,
     },
     primaryBtn: {
@@ -207,7 +204,7 @@ function createHomeStyles(colors: AppColors) {
     },
     primaryLabel: {
       color: colors.onInteractive,
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       fontWeight: "600",
     },
   });
@@ -444,7 +441,7 @@ export default function HomeScreen() {
           },
           pressed && styles.pressed,
         ]}
-        hitSlop={6}
+        hitSlop={SPACING.sm}
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>

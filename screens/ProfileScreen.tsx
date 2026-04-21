@@ -14,6 +14,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextStyle,
 } from "react-native";
 
 import AppHeader from "../components/AppHeader";
@@ -34,7 +35,12 @@ import {
   saveProfile,
   setDebugDateOverride,
 } from "../utils/storage";
-import { PROFILE_DARK_MODE_SWITCH, SPACING } from "../utils/theme";
+import {
+  PROFILE_DARK_MODE_SWITCH,
+  SCREEN_HORIZONTAL,
+  SPACING,
+  typography,
+} from "../utils/theme";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 
@@ -44,6 +50,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileMain">;
 const SHOW_DEBUG_TOOLS = false;
 
 function createProfileStyles(colors: AppColors) {
+  const avatarSize = SPACING.xl * 3 + SPACING.md;
   return StyleSheet.create({
     screenRoot: {
       flex: 1,
@@ -53,23 +60,29 @@ function createProfileStyles(colors: AppColors) {
       flex: 1,
     },
     scroll: {
-      paddingHorizontal: SPACING.md,
+      paddingHorizontal: SCREEN_HORIZONTAL,
       paddingTop: SPACING.lg,
       paddingBottom: SPACING.xl + SPACING.md,
     },
-    welcome: {
-      fontSize: 22,
-      fontWeight: "700",
+    welcomeLine: {
       marginBottom: SPACING.lg,
       textAlign: "center",
+    },
+    welcomePrefix: {
+      ...(typography.subheader as TextStyle),
+      fontWeight: "500",
+      color: colors.textSecondary,
+    },
+    welcomeName: {
+      ...(typography.display as TextStyle),
       color: colors.textPrimary,
     },
     avatarWrap: { alignItems: "center", marginBottom: SPACING.lg },
     avatarImg: {
-      width: 112,
-      height: 112,
-      borderRadius: 56,
-      marginBottom: 12,
+      width: avatarSize,
+      height: avatarSize,
+      borderRadius: avatarSize / 2,
+      marginBottom: SPACING.md,
     },
     avatarPlaceholder: {
       backgroundColor: colors.card,
@@ -77,14 +90,14 @@ function createProfileStyles(colors: AppColors) {
       justifyContent: "center",
     },
     avatarPlaceholderText: {
-      fontSize: 40,
+      fontSize: SPACING.lg + SPACING.lg,
       color: colors.placeholder,
     },
     labelRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 6,
+      marginBottom: SPACING.sm,
     },
     toggleRow: {
       flexDirection: "row",
@@ -94,106 +107,126 @@ function createProfileStyles(colors: AppColors) {
       paddingVertical: SPACING.xs,
     },
     fieldLabel: {
-      fontSize: 14,
-      fontWeight: "600",
+      ...(typography.label as TextStyle),
       color: colors.textPrimary,
     },
     editLink: {
-      fontSize: 15,
+      ...(typography.caption as TextStyle),
       fontWeight: "600",
       color: colors.link,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 8,
-      fontSize: 16,
+      borderRadius: SPACING.sm,
+      padding: SPACING.md - SPACING.xs,
+      marginBottom: SPACING.sm,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     fieldError: {
       color: colors.danger,
-      marginBottom: 8,
-      fontSize: 14,
+      marginBottom: SPACING.sm,
+      ...(typography.caption as TextStyle),
     },
     readonlyValue: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
-      marginBottom: 16,
+      marginBottom: SPACING.md,
+    },
+    readonlyUsername: {
+      color: colors.textSecondary,
     },
     secondaryBtn: {
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      borderWidth: 1,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.md,
+      borderRadius: SPACING.sm,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.neutralBorderSoft,
-      marginBottom: 8,
+      marginBottom: SPACING.sm,
     },
-    secondaryBtnText: { fontSize: 16, color: colors.textPrimary },
+    secondaryBtnText: {
+      ...(typography.body as TextStyle),
+      color: colors.textPrimary,
+    },
     removePhoto: {
-      fontSize: 14,
+      ...(typography.caption as TextStyle),
       color: colors.link,
-      marginBottom: 8,
+      marginBottom: SPACING.sm,
+    },
+    primaryActions: {
+      width: "100%",
+      gap: SPACING.md,
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.xl,
     },
     logbookBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 14,
-      borderRadius: 8,
+      paddingVertical: SPACING.md - SPACING.xs,
+      borderRadius: SPACING.sm,
       alignItems: "center",
-      marginBottom: 16,
     },
     logbookBtnText: {
       color: colors.onInteractive,
-      fontSize: 17,
+      ...(typography.body as TextStyle),
       fontWeight: "600",
     },
     logoutBtn: {
-      alignSelf: "flex-start",
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
+      alignSelf: "stretch",
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md - SPACING.xs,
+      borderRadius: SPACING.sm,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.neutralBorder,
-      marginBottom: 32,
+      alignItems: "center",
     },
     logoutLabel: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.textPrimary,
     },
     debugSection: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
-      paddingTop: 20,
+      paddingTop: SPACING.md + SPACING.xs,
     },
     debugHeading: {
-      fontSize: 14,
+      ...(typography.label as TextStyle),
       fontWeight: "800",
       color: colors.debugHeading,
-      marginBottom: 10,
+      marginBottom: SPACING.sm + SPACING.xs,
     },
-    debugLine: { fontSize: 15, marginBottom: 6, color: colors.textPrimary },
+    debugLine: {
+      ...(typography.body as TextStyle),
+      marginBottom: SPACING.sm,
+      color: colors.textPrimary,
+    },
     debugSub: {
-      fontSize: 13,
+      ...(typography.caption as TextStyle),
       color: colors.textSecondary,
-      marginBottom: 12,
+      marginBottom: SPACING.md,
     },
     debugBtn: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 12,
-      borderRadius: 8,
+      paddingVertical: SPACING.md - SPACING.xs,
+      borderRadius: SPACING.sm,
       alignItems: "center",
-      marginBottom: 10,
+      marginBottom: SPACING.sm + SPACING.xs,
     },
-    debugBtnText: { color: colors.onInteractive, fontWeight: "600" },
+    debugBtnText: {
+      color: colors.onInteractive,
+      ...(typography.label as TextStyle),
+    },
     debugBtnSecondary: {
-      paddingVertical: 12,
-      borderRadius: 8,
+      paddingVertical: SPACING.md - SPACING.xs,
+      borderRadius: SPACING.sm,
       alignItems: "center",
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.neutralBorder,
     },
-    debugBtnSecondaryText: { fontSize: 16, color: colors.textPrimary },
+    debugBtnSecondaryText: {
+      ...(typography.body as TextStyle),
+      color: colors.textPrimary,
+    },
     modalBackdrop: {
       flex: 1,
       justifyContent: "center",
@@ -202,41 +235,40 @@ function createProfileStyles(colors: AppColors) {
     modalBackdropInner: {
       flex: 1,
       justifyContent: "center",
-      paddingHorizontal: 24,
+      paddingHorizontal: SPACING.lg,
     },
     modalCard: {
       backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 20,
+      borderRadius: SPACING.sm + SPACING.xs,
+      padding: SPACING.lg,
     },
     modalTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 14,
+      ...(typography.modalTitle as TextStyle),
+      marginBottom: SPACING.md - SPACING.xs,
       color: colors.textPrimary,
     },
     modalActions: {
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
-      gap: 16,
-      marginTop: 8,
+      gap: SPACING.md,
+      marginTop: SPACING.sm,
     },
     modalCancel: {
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       color: colors.link,
-      paddingVertical: 8,
-      paddingHorizontal: 4,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.xs,
     },
     modalSave: {
       backgroundColor: colors.interactiveStrong,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 8,
+      paddingVertical: SPACING.sm + SPACING.xs,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: SPACING.sm,
     },
     modalSaveText: {
       color: colors.onInteractive,
-      fontSize: 16,
+      ...(typography.body as TextStyle),
       fontWeight: "600",
     },
     primaryBtnDisabled: { opacity: 0.5 },
@@ -422,7 +454,10 @@ export default function ProfileScreen({ navigation }: Props) {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.welcome}>Welcome {displayName}</Text>
+        <Text style={styles.welcomeLine} accessibilityRole="header">
+          <Text style={styles.welcomePrefix}>Welcome </Text>
+          <Text style={styles.welcomeName}>{displayName}</Text>
+        </Text>
 
         <View style={styles.avatarWrap}>
           {imageUri ? (
@@ -452,7 +487,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
         <View style={styles.labelRow}>
           <Text style={styles.fieldLabel}>Name</Text>
-          <Pressable onPress={openNameModal} hitSlop={8}>
+          <Pressable onPress={openNameModal} hitSlop={SPACING.sm}>
             <Text style={styles.editLink}>Edit</Text>
           </Pressable>
         </View>
@@ -460,7 +495,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
         <Text style={styles.fieldLabel}>Username</Text>
         <Text
-          style={styles.readonlyValue}
+          style={[styles.readonlyValue, styles.readonlyUsername]}
           numberOfLines={4}
           ellipsizeMode="tail"
         >
@@ -479,16 +514,21 @@ export default function ProfileScreen({ navigation }: Props) {
           />
         </View>
 
-        <Pressable
-          style={styles.logbookBtn}
-          onPress={() => navigation.navigate("Logbook")}
-        >
-          <Text style={styles.logbookBtnText}>Logbook</Text>
-        </Pressable>
+        <View style={styles.primaryActions}>
+          <Pressable
+            style={styles.logbookBtn}
+            onPress={() => navigation.navigate("Logbook")}
+          >
+            <Text style={styles.logbookBtnText}>Logbook</Text>
+          </Pressable>
 
-        <Pressable style={styles.logoutBtn} onPress={() => void handleLogout()}>
-          <Text style={styles.logoutLabel}>Log out</Text>
-        </Pressable>
+          <Pressable
+            style={styles.logoutBtn}
+            onPress={() => void handleLogout()}
+          >
+            <Text style={styles.logoutLabel}>Log out</Text>
+          </Pressable>
+        </View>
 
         {SHOW_DEBUG_TOOLS ? (
           <DebugDateOverrideSection
