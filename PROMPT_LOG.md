@@ -2215,7 +2215,7 @@ Do not start UI Phase 4.
 > 49 | import AppHeader from "../components/AppHeader";
      |        ^
   50 |
-  51 | type Goal = {
+  51 | type Goal = {}
   52 |   id: string;]
  ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
  ERROR  [ReferenceError: Property 'APP_HEADER_HORIZONTAL' doesn't exist]
