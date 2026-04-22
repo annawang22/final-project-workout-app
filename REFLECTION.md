@@ -12,7 +12,7 @@ Seemed like the best approach with the scope of this project and time limitation
 I have been exposed to many more AI tools. Before this class, I didn't know Cursor or Claude existed. I also had no idea the breadth that you can do with these AI tools, so my approach pre and post-113 is extremely different. Previously, I probably wouldn't have even attempted to build an app because I'd think the scope is too big and if I were to, I'd definitely would have just gave ChatGPT a very vague prompt like "build me a workout app that's similar to Strava" and pray that it would work and as it wouldn't, spend an unnecessary amount of hours debugging. Now, I can say that I am much more well-equipped to create projects like this. 
 
 ### What might you do with this project with more time? 
-    - Potentially instead of writing my idea out to ChatGPT, allowing myself to voice record and actually explain out loud to it
-    - Add an AI chatbot that helps them come up with exercises/plan or maybe an API database with exercises for users to "explore"
-    - Connecting to Spotify API to allow user to click into a specific playlist they curated for the goal
-    - Depending on the mode user chooses, potentially having exercises increase automatically after a certain amount of time
+- Potentially instead of writing my idea out to ChatGPT, allowing myself to voice record and actually explain out loud to it
+- Add an AI chatbot that helps them come up with exercises/plan or maybe an API database with exercises for users to "explore"
+- Connecting to Spotify API to allow user to click into a specific playlist they curated for the goal
+- Depending on the mode user chooses, potentially having exercises increase automatically after a certain amount of time
